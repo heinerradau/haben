@@ -17,7 +17,7 @@ Mit **Speichern** sicherst du Zwischenstände, ohne zu buchen.
 
 ## Hochladen
 
-Es gibt drei Wege, alle führen zum selben Ergebnis:
+Es gibt mehrere Wege, alle führen zum selben Ergebnis:
 
 | Weg | Wie |
 | --- | --- |
@@ -25,6 +25,7 @@ Es gibt drei Wege, alle führen zum selben Ergebnis:
 | Dateiauswahl | **Dateien auswählen**, auch mehrere auf einmal (bis 50 je Vorgang). |
 | Kamera | Auf dem Handy **Foto aufnehmen**; öffnet direkt die Rückkamera. |
 | Teilen-Menü | In der als App installierten Version (PWA) taucht Haben im Teilen-Menü des Telefons auf. Geteilte Dateien gehen an `/api/belege/teilen` (bis 20 je Vorgang). Bei genau einer Datei öffnet Haben danach gleich den Beleg, sonst die Liste. |
+| Andere Systeme | Ein Dokumentenarchiv, ein Skript oder ein KI-Assistent legt Belege mit einem API-Token über `POST /api/v1/belege` bzw. das Werkzeug `beleg_anlegen` an, siehe [Belege anlegen](ki-assistenten.md#belege-anlegen-auch-ohne-ki-assistent). |
 
 Erlaubt sind PDF, JPEG, PNG, WebP, HEIC und E-Rechnungs-XML bis 20 MB je Datei. Nach dem Hochladen meldet Haben je Datei „abgelegt“, „liegt schon in Haben, nicht doppelt abgelegt“ oder den Grund der Ablehnung.
 

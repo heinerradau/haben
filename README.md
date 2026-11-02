@@ -182,8 +182,8 @@ Nein, Haben kennt genau ein Konto, gedacht für dich und deine eigene Firma.
 <details>
 <summary><b>Kann ich Claude oder andere Agenten mit meiner Buchhaltung nutzen?</b></summary>
 
-Ja, über MCP, und nur lesend: „Welche Rechnungen sind überfällig?“ Buchen und Senden an ELSTER
-machst du weiter selbst. Siehe [Agenten (MCP)](https://firsttris.github.io/haben/ki-assistenten.html).
+Ja, über MCP: lesen („Welche Rechnungen sind überfällig?“) und, wenn du es erlaubst, Belege zum Prüfen
+anlegen. Buchen und Senden an ELSTER machst du weiter selbst. Siehe [Agenten (MCP)](https://firsttris.github.io/haben/ki-assistenten.html).
 </details>
 
 <details>
@@ -213,7 +213,7 @@ Auch als Website mit Suche: **https://firsttris.github.io/haben/**
 | [Auswertungen und Jahresexport](https://firsttris.github.io/haben/auswertungen.html) | EÜR, offene Posten, Archiv-ZIP mit Prüfsummen, Aufbewahrung |
 | [Umzug aus Lexoffice](https://firsttris.github.io/haben/lexoffice.html) | API-Abruf oder Sicherung über die Web-Oberfläche, DATEV-Buchungsstapel, offene Posten, Abgleich vor der Kündigung |
 | [Umzug aus sevDesk](https://firsttris.github.io/haben/sevdesk.html) | API-Abruf aus sevDesk ins selbe Archiv, Unterschiede zu Lexoffice |
-| [KI-Assistenten (MCP)](https://firsttris.github.io/haben/ki-assistenten.html) | Im Gespräch mit Claude Code, Claude Desktop oder einem lokalen Modell abfragen; nur lesen |
+| [KI-Assistenten (MCP)](https://firsttris.github.io/haben/ki-assistenten.html) | Im Gespräch mit Claude Code, Claude Desktop oder einem lokalen Modell abfragen; Belege anlegen, auch über `POST /api/v1/belege` |
 | [Mein ELSTER mit KI-Assistent](https://firsttris.github.io/haben/elster-mit-assistent.html) | Ohne Hersteller-ID abgeben: der Assistent trägt die Voranmeldung ein, du sendest ab |
 | [Barrierefreiheit und Tastatur](https://firsttris.github.io/haben/barrierefreiheit.html) | Bedienung ohne Maus, Tastenkürzel, Kontraste, Prüfung mit axe-core |
 | [Buchhaltung in Haben](https://firsttris.github.io/haben/buchhaltung.html) | GoBD, Festschreibung, Kontenrahmen, alle Buchungssätze, Steuerschlüssel |

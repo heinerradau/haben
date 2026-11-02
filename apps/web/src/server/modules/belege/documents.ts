@@ -307,7 +307,8 @@ export interface UploadResult {
 export async function uploadDocument(
   actor: string,
   file: { bytes: Uint8Array; filename: string },
-  options: { background?: (work: Promise<void>) => void } = {},
+  /** note: Herkunft am Beleg, etwa der Name eines API-Zugangs */
+  options: { background?: (work: Promise<void>) => void; note?: string } = {},
 ): Promise<UploadResult> {
   if (file.bytes.byteLength === 0) throw new DocumentError(`${file.filename}: Die Datei ist leer.`);
   if (file.bytes.byteLength > MAX_DOCUMENT_SIZE) throw new DocumentError(`${file.filename}: größer als 20 MB.`);
@@ -321,7 +322,13 @@ export async function uploadDocument(
   const id = await withActor(actor, async (tx) => {
     const [created] = await tx
       .insert(schema.documents)
-      .values({ sha256, filename: file.filename.slice(0, 200), mimeType: type.mimeType, size: file.bytes.byteLength })
+      .values({
+        sha256,
+        filename: file.filename.slice(0, 200),
+        mimeType: type.mimeType,
+        size: file.bytes.byteLength,
+        ...(options.note ? { note: options.note.slice(0, 1000) } : {}),
+      })
       .onConflictDoNothing({ target: schema.documents.sha256 })
       .returning({ id: schema.documents.id });
     return created?.id ?? null;

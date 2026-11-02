@@ -35,6 +35,7 @@ describe("Schutz vor Anfragen fremder Seiten", () => {
   it("prüft keine lesenden Anfragen und keine Pfade mit eigener Prüfung", async () => {
     expect(await allowed("GET", serverFn, { "sec-fetch-site": "cross-site" })).toBe(true);
     expect(await allowed("POST", "/api/mcp", { "sec-fetch-site": "cross-site" })).toBe(true);
+    expect(await allowed("POST", "/api/v1/belege", { "sec-fetch-site": "cross-site" })).toBe(true);
     expect(await allowed("POST", "/api/belege/teilen", { "sec-fetch-site": "none" })).toBe(true);
     // Ohne jeden Herkunfts-Header (kein Browser) entscheidet die Anmeldung
     expect(await allowed("POST", serverFn, {})).toBe(true);

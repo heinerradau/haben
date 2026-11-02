@@ -4,8 +4,11 @@ import { env } from "./env.ts";
 type CsrfOptions = NonNullable<Parameters<typeof createCsrfMiddleware>[0]>;
 
 const SAFE_METHODS = new Set(["GET", "HEAD", "OPTIONS"]);
-/** Prüfen selbst: MCP per Bearer-Token ohne Browser, das Teilen-Ziel lässt auch das Teilen-Menü des Systems zu */
-const OWN_CHECK = new Set(["/api/mcp", "/api/belege/teilen"]);
+/**
+ * Prüfen selbst: MCP und /api/v1/… per Bearer-Token ohne Browser (ein fremdes Formular kann den Header nicht setzen),
+ * das Teilen-Ziel lässt auch das Teilen-Menü des Systems zu
+ */
+const OWN_CHECK = new Set(["/api/mcp", "/api/v1/belege", "/api/belege/teilen"]);
 
 /**
  * Schreibende Anfragen nur von der eigenen Seite: Sec-Fetch-Site, sonst Origin oder Referer müssen

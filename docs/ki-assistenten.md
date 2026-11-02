@@ -2,7 +2,7 @@
 
 Haben lässt sich im Gespräch mit einem KI-Assistenten abfragen, etwa mit Claude Code, Claude Desktop oder einem lokalen Modell: „Welche Rechnungen sind überfällig?“, „Wie viel Umsatzsteuer zahle ich im Oktober?“, „Was fehlt noch für die Jahreserklärung 2025?“. Der Assistent arbeitet dabei über Werkzeuge, die Haben nach dem [Model Context Protocol (MCP)](https://modelcontextprotocol.io) anbietet.
 
-Der Zugang kann **nur lesen**. Buchen, Festschreiben, Stornieren, Mails versenden und alles, was an ELSTER geht, machst du weiter selbst in Haben. Die Antworten der Werkzeuge enthalten dafür Links auf die passende Seite.
+Ein Zugang kann **lesen** und, wenn du es beim Token ausdrücklich erlaubst, **Belege anlegen**. Angelegte Belege landen wie ein Upload als „Zu prüfen“. Buchen, Festschreiben, Stornieren, Mails versenden und alles, was an ELSTER geht, machst du weiter selbst in Haben. Die Antworten der Werkzeuge enthalten dafür Links auf die passende Seite.
 
 ## Datenschutz
 
@@ -10,12 +10,12 @@ Was der Assistent über die Werkzeuge liest, geht an den Anbieter des Modells. B
 
 - Der Zugang ist standardmäßig aus und wird ausdrücklich eingeschaltet.
 - Kein Werkzeug gibt ELSTER-Zertifikat, PIN, Passwörter, API-Schlüssel oder die Steuer-ID heraus.
-- Texte aus Belegen, Bankumsätzen und Bescheiden stammen von Dritten. Haben sagt dem Assistenten, dass das Daten sind und keine Anweisungen; weil der Zugang nichts ändern kann, bleibt der mögliche Schaden auf das Lesen begrenzt.
+- Texte aus Belegen, Bankumsätzen und Bescheiden stammen von Dritten. Haben sagt dem Assistenten, dass das Daten sind und keine Anweisungen. Ein lesender Zugang kann nichts ändern; ein Zugang mit „Belege anlegen“ kann höchstens Belege zum Prüfen ablegen, nichts buchen und nichts löschen.
 
 ## Einrichten
 
 1. **Einstellungen → KI-Assistenten** öffnen und **Zugang für KI-Assistenten einschalten**.
-2. Unter **API-Tokens** einen Namen vergeben (z. B. „Claude Code am Laptop“), die Gültigkeit wählen (30 Tage, 90 Tage oder ein Jahr) und **Token anlegen**.
+2. Unter **API-Tokens** einen Namen vergeben (z. B. „Claude Code am Laptop“), die Gültigkeit wählen (30 Tage, 90 Tage oder ein Jahr), die **Rechte** wählen (**Lesen** ist vorausgewählt, **Belege anlegen** kommt nur auf Wunsch dazu) und **Token anlegen**.
 3. Das Token sofort kopieren: Haben speichert nur seinen SHA-256-Hash und zeigt es nie wieder an.
 
 Jeder Assistent sollte sein eigenes Token bekommen. **Widerrufen** sperrt ein Token sofort; abgelaufene und widerrufene bleiben zur Nachvollziehbarkeit in der Liste. Wer den Zugang wieder ausschaltet, sperrt alle Tokens auf einmal.
@@ -76,6 +76,7 @@ Caddy signiert Zertifikate für lokale Namen wie `haben.lan` mit seiner eigenen 
 | `lexoffice_beleg` | ein Lexoffice-Beleg mit allen Feldern, Dateien und der gespeicherten Antwort der API (ohne Steuernummern) |
 | `lexoffice_konten` | Soll, Haben und Saldo je Konto aus dem archivierten DATEV-Buchungsstapel für ein Jahr oder einen Monat, mit Summen der Erträge und Aufwendungen |
 | `lexoffice_buchungen` | einzelne DATEV-Buchungen eines Jahres oder Monats, filterbar nach Konto oder nach Buchungen ohne passenden Beleg |
+| `beleg_anlegen` | nur mit dem Recht „Belege anlegen“: legt eine Datei (PDF, Foto oder E-Rechnungs-XML, als Base64) als Beleg „Zu prüfen“ an und gibt den Link zum Prüfen zurück; dieselbe Datei ein zweites Mal liefert den vorhandenen Beleg |
 
 ### Voranmeldungen aus Lexware Office vergleichen
 
@@ -89,8 +90,21 @@ Den Abruf selbst und das Hochladen der Exporte machst du in Haben. PDFs im Archi
 
 Beträge kommen in Euro, Datumsangaben als JJJJ-MM-TT. Die Listen sind auf 50 Einträge begrenzt (bis 200 auf Wunsch), damit der Assistent nicht mit Tausenden Zeilen arbeiten muss.
 
+## Belege anlegen (auch ohne KI-Assistent)
+
+Mit dem Recht **Belege anlegen** nimmt Haben Belege aus anderen Systemen an, etwa aus einem Dokumentenarchiv wie Paperless-ngx, einem Postfach-Skript oder einem Agenten. Ein KI-Assistent nimmt dafür das Werkzeug `beleg_anlegen`; andere Systeme schicken die Datei an die Schnittstelle `POST /api/v1/belege`:
+
+```bash
+curl -H "Authorization: Bearer hb_…" -F datei=@rechnung.pdf -F notiz="aus Paperless" https://haben.example.de/api/v1/belege
+```
+
+- Felder: `datei` (Pflicht, bis 20 MB, PDF, JPEG, PNG, WebP, HEIC oder E-Rechnungs-XML) und `notiz` (optional, bis 500 Zeichen).
+- Antwort: `201` mit `id`, `doppelt: false` und `link` zum Beleg; `200` mit `doppelt: true`, wenn es dieselbe Datei schon gibt. Fehler kommen als `{"fehler": "…"}`: `401` ohne gültiges Token oder bei ausgeschaltetem Zugang, `403` ohne das Recht, `400` ohne Datei, `413` zu groß, `422` bei leerer oder nicht erlaubter Datei, `429` bei mehr als 120 Anfragen pro Minute.
+- Der Beleg landet wie ein Upload als „Zu prüfen“: E-Rechnungen liest Haben selbst, andere Dateien gehen an die [KI-Auslesung](belege.md#ki-auslesung-mit-claude), falls eingerichtet. Am Beleg steht als Notiz, über welchen Zugang er kam; im Änderungsprotokoll steht `agent:mcp` bzw. `agent:api`.
+- Gib einem System nur die Rechte, die es braucht: Ein Dokumentenarchiv bekommt nur „Belege anlegen“, kein „Lesen“.
+
 ## Protokoll und Grenzen
 
-Unter **Letzte Aufrufe** steht, welcher Assistent wann welches Werkzeug benutzt hat und ob es geklappt hat, ohne Eingaben und Ergebnisse. Haben hebt das 90 Tage auf. Je Token sind 120 Anfragen pro Minute erlaubt; schickt ein Client mehrere Nachrichten in einer Anfrage (Batch), zählt jede einzeln.
+Unter **Letzte Aufrufe** steht, welcher Assistent wann welches Werkzeug benutzt hat (Aufrufe der Schnittstelle als `api:belege`) und ob es geklappt hat, ohne Eingaben und Ergebnisse. Haben hebt das 90 Tage auf. Je Token sind 120 Anfragen pro Minute erlaubt; schickt ein Client mehrere Nachrichten in einer Anfrage (Batch), zählt jede einzeln.
 
 Das Ein- und Ausschalten des Zugangs steht im Änderungsprotokoll. Die Tokens selbst sind Zugangsdaten wie die Passkeys und stehen nicht darin.

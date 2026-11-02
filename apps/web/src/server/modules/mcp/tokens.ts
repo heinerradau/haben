@@ -16,8 +16,11 @@ import { loadCompany } from "../stammdaten/index.ts";
 
 export class McpError extends UserError {}
 
-/** Rechte je Stufe: lesen jetzt, Entwürfe später (#96) */
-export const MCP_SCOPES = ["haben:lesen"] as const;
+/**
+ * Rechte je Zugang: lesen (#96, Stufe 1) und Belege anlegen (#104, Schritt 1). Angelegte Belege landen als
+ * „Zu prüfen“; gebucht, festgeschrieben und gesendet wird weiter nur in der Oberfläche.
+ */
+export const MCP_SCOPES = ["haben:lesen", "belege:anlegen"] as const;
 export type McpScope = (typeof MCP_SCOPES)[number];
 
 /** Gültigkeit eines neuen Tokens in Tagen */
@@ -30,6 +33,11 @@ const CALL_RETENTION_DAYS = 90;
 export const mcpTokenInputSchema = z.object({
   name: z.string().trim().min(1, "Bitte einen Namen angeben.").max(80),
   days: z.union([z.literal(30), z.literal(90), z.literal(365)]),
+  scopes: z
+    .array(z.enum(MCP_SCOPES))
+    .min(1, "Bitte mindestens ein Recht wählen.")
+    .default(["haben:lesen"])
+    .transform((scopes) => MCP_SCOPES.filter((s) => scopes.includes(s))),
 });
 
 export interface McpAccess {
@@ -51,8 +59,8 @@ export async function setMcpEnabled(actor: string, enabled: boolean): Promise<vo
 }
 
 /** Legt ein Token an; den Klartext gibt es nur in dieser Antwort. */
-export async function createMcpToken(input: z.infer<typeof mcpTokenInputSchema>, now = new Date()): Promise<{ id: string; token: string }> {
-  const { name, days } = mcpTokenInputSchema.parse(input);
+export async function createMcpToken(input: z.input<typeof mcpTokenInputSchema>, now = new Date()): Promise<{ id: string; token: string }> {
+  const { name, days, scopes } = mcpTokenInputSchema.parse(input);
   if (!(await mcpEnabled())) throw new McpError("Erst den Zugang für KI-Assistenten einschalten.");
   const token = `${TOKEN_PREFIX}${randomBytes(32).toString("base64url")}`;
   const [row] = await db
@@ -61,7 +69,7 @@ export async function createMcpToken(input: z.infer<typeof mcpTokenInputSchema>,
       name,
       tokenHash: hashToken(token),
       prefix: token.slice(0, TOKEN_PREFIX.length + 4),
-      scopes: ["haben:lesen"],
+      scopes,
       createdAt: now,
       expiresAt: new Date(now.getTime() + days * 86_400_000),
     })
@@ -94,7 +102,7 @@ export async function listMcpTokens(now = new Date()) {
 }
 
 /**
- * Prüft den Bearer-Header einer Anfrage an /api/mcp. Null, wenn der Zugang ausgeschaltet ist oder das Token fehlt,
+ * Prüft den Bearer-Header einer Anfrage an /api/mcp oder /api/v1/…. Null, wenn der Zugang ausgeschaltet ist oder das Token fehlt,
  * unbekannt, abgelaufen oder widerrufen ist.
  */
 export async function authenticateMcp(request: Request, now = new Date()): Promise<McpAccess | null> {
