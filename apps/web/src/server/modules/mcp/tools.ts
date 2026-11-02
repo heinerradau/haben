@@ -23,10 +23,12 @@ import { invoiceSummary, listInvoices, overdueInvoices } from "../rechnungen/ind
 import { companyIssues, kleinunternehmerForMonth, loadCompany } from "../stammdaten/index.ts";
 import { computeVatFigures, computedValues, preflight, returnsForPeriod } from "../umsatzsteuer/index.ts";
 import { ustvaAusfuellliste } from "./ausfuellliste.ts";
-import { McpError, type McpScope } from "./tokens.ts";
+import { createAgentDocument, decodeBase64, MAX_BASE64_LENGTH } from "./belege.ts";
+import { McpError, type McpAccess, type McpScope } from "./tokens.ts";
 
 /*
- * Werkzeuge für KI-Assistenten, Stufe 1: nur lesen (#96). Jedes ist eine dünne Hülle um die öffentliche Schnittstelle
+ * Werkzeuge für KI-Assistenten. Stufe 1: lesen (#96); dazu „beleg_anlegen“ mit eigenem Recht (#104), das Belege nur
+ * als „Zu prüfen“ ablegt. Jedes ist eine dünne Hülle um die öffentliche Schnittstelle
  * der Module und liefert Antworten statt Rohdaten, gekürzt auf das Nötige. Beträge in Euro (nicht in Cent), Datumsangaben
  * als JJJJ-MM-TT, Links führen auf die Seite in Haben, auf der man prüft und entscheidet.
  *
@@ -45,7 +47,12 @@ export interface McpTool<Shape extends z.ZodRawShape = z.ZodRawShape> {
 export interface ToolContext {
   /** Heutiges Datum in Deutschland, JJJJ-MM-TT */
   today: string;
+  /** Der aufrufende Zugang; fehlt nur in Tests einzelner lesender Werkzeuge */
+  access?: McpAccess;
 }
+
+/** Werkzeuge, die etwas anlegen; alle anderen lesen nur */
+export const WRITING_SCOPES: readonly McpScope[] = ["belege:anlegen"];
 
 const euro = (cents: number) => Math.round(cents) / 100;
 const link = (path: string) => `${env().BETTER_AUTH_URL.replace(/\/$/, "")}${path}`;
@@ -738,8 +745,25 @@ export const MCP_TOOLS: McpTool[] = [
       };
     },
   }),
+  tool({
+    name: "beleg_anlegen",
+    title: "Beleg anlegen",
+    description:
+      "Legt einen Eingangsbeleg (PDF, JPEG, PNG, WebP, HEIC oder E-Rechnungs-XML, bis 20 MB) als „Zu prüfen“ an. E-Rechnungen liest Haben selbst, andere Dateien gehen an die KI-Auslesung, falls eingerichtet. Gebucht wird nichts: Der Nutzer prüft und bucht den Beleg über den Link. Gibt es dieselbe Datei schon, kommt der vorhandene Beleg zurück (doppelt: true).",
+    scope: "belege:anlegen",
+    input: {
+      dateiname: z.string().trim().min(1).max(200).describe("Dateiname mit Endung, z. B. rechnung-2026-11.pdf"),
+      inhaltBase64: z.string().min(1).max(MAX_BASE64_LENGTH).describe("Inhalt der Datei als Base64"),
+      notiz: z.string().max(500).optional().describe("Kurzer Hinweis zur Herkunft, z. B. „aus dem Postfach, Mail vom 02.11.“"),
+    },
+    run: async ({ dateiname, inhaltBase64, notiz }, context) => {
+      if (!context.access) throw new McpError("Kein Zugang.");
+      const result = await createAgentDocument(context.access, "mcp", { bytes: decodeBase64(inhaltBase64), filename: dateiname }, notiz);
+      return { ...result, hinweis: result.doppelt ? "Diesen Beleg gibt es schon." : "Angelegt als „Zu prüfen“. Prüfen und buchen in Haben über den Link." };
+    },
+  }),
 ];
 
-export function todayContext(now = new Date()): ToolContext {
-  return { today: todayInGermany(now) };
+export function todayContext(now = new Date(), access?: McpAccess): ToolContext {
+  return { today: todayInGermany(now), ...(access ? { access } : {}) };
 }

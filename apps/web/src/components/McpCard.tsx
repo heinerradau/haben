@@ -10,6 +10,8 @@ type Data = Awaited<ReturnType<typeof getMcpSettings>>;
 
 export const MCP_DOCS = "https://firsttris.github.io/haben/ki-assistenten.html";
 
+const SCOPE_LABELS: Record<string, string> = { "haben:lesen": "Lesen", "belege:anlegen": "Belege anlegen" };
+
 const STATUS = { aktiv: "pill-ok", abgelaufen: "pill-warn", widerrufen: "pill" } as const;
 
 /** Einstellungen → KI-Assistenten: Zugang über MCP ein- und ausschalten, API-Tokens und Protokoll */
@@ -28,8 +30,9 @@ export function McpCard({ data }: { data: Data }) {
     const form = event.currentTarget;
     const values = new FormData(form);
     const name = String(values.get("name") ?? "").trim();
+    const scopes = values.getAll("scopes").map(String) as ("haben:lesen" | "belege:anlegen")[];
     void run(async () => {
-      const { token } = await create({ data: { name, days: Number(values.get("days")) as 30 | 90 | 365 } });
+      const { token } = await create({ data: { name, days: Number(values.get("days")) as 30 | 90 | 365, scopes } });
       setCopied(false);
       setCreated({ name, token });
       form.reset();
@@ -45,8 +48,8 @@ export function McpCard({ data }: { data: Data }) {
         <h2 id="mcp-heading">KI-Assistenten (MCP)</h2>
         <p className="small muted" style={{ margin: 0, maxWidth: 760 }}>
           Mit dem Model Context Protocol fragt ein KI-Assistent wie Claude Code, Claude Desktop oder ein lokales Modell deine Buchhaltung im Gespräch ab, etwa
-          „Welche Rechnungen sind überfällig?“ oder „Wie viel Umsatzsteuer zahle ich im Oktober?“. Der Zugang kann nur lesen: Buchen, Festschreiben und Senden
-          an ELSTER machst du weiter selbst in Haben.
+          „Welche Rechnungen sind überfällig?“ oder „Wie viel Umsatzsteuer zahle ich im Oktober?“. Der Zugang liest; mit eigenem Recht legt er auch Belege als
+          „Zu prüfen“ an. Buchen, Festschreiben und Senden an ELSTER machst du weiter selbst in Haben.
         </p>
         <div className="banner banner-info" style={{ maxWidth: 760 }}>
           Was der Assistent liest, geht an den Anbieter des Modells, bei Claude also an die Server von Anthropic, auch wenn Haben nur im Heimnetz läuft. Ganz
@@ -102,7 +105,7 @@ export function McpCard({ data }: { data: Data }) {
                 </button>
               </div>
               <p className="small muted" style={{ margin: 0 }}>
-                Wer das Token hat, liest deine Buchhaltung. Gib es nicht weiter. Für Claude Desktop und andere Clients steht die Einrichtung in der{" "}
+                Wer das Token hat, liest deine Buchhaltung bzw. legt Belege an. Gib es nicht weiter. Für Claude Desktop und andere Clients steht die Einrichtung in der{" "}
                 <a href={MCP_DOCS} target="_blank" rel="noreferrer">
                   Anleitung
                 </a>
@@ -121,6 +124,7 @@ export function McpCard({ data }: { data: Data }) {
                   <span style={{ fontWeight: 500 }}>
                     {token.name} <span className={`pill ${STATUS[token.status]}`}>{token.status}</span>
                   </span>
+                  <span className="small muted">{token.scopes.map((scope) => SCOPE_LABELS[scope] ?? scope).join(", ")}</span>
                   <span className="small muted">
                     <span className="mono">{token.prefix}…</span> · angelegt {formatDate(token.createdAt)} ·{" "}
                     {token.status === "widerrufen" ? `widerrufen ${formatDate(token.revokedAt!)}` : `gültig bis ${formatDate(token.expiresAt)}`} ·{" "}
@@ -158,6 +162,17 @@ export function McpCard({ data }: { data: Data }) {
                 <option value="365">1 Jahr</option>
               </select>
             </label>
+            <fieldset className="field" style={{ gridColumn: "1 / -1", border: 0, padding: 0, margin: 0 }}>
+              <legend>Rechte</legend>
+              <label className="checkbox">
+                <input type="checkbox" name="scopes" value="haben:lesen" defaultChecked />
+                {SCOPE_LABELS["haben:lesen"]}
+              </label>
+              <label className="checkbox">
+                <input type="checkbox" name="scopes" value="belege:anlegen" />
+                {SCOPE_LABELS["belege:anlegen"]} (landen als „Zu prüfen“, auch über POST /api/v1/belege)
+              </label>
+            </fieldset>
             <div className="actions" style={{ gridColumn: "1 / -1" }}>
               <button type="submit" className="btn" disabled={busy}>
                 Token anlegen
