@@ -193,7 +193,7 @@ function amountsByRate(amounts: ExtractedFields["amounts"]): ExtractedFields["am
 }
 
 /** Übernimmt ausgelesene Felder, solange der Beleg noch nicht gebucht ist. */
-async function applyFields(
+export async function applyFields(
   actor: string,
   id: string,
   fields: ExtractedFields,

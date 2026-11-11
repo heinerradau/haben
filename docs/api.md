@@ -37,6 +37,7 @@ Es sind dieselben Tokens wie für die [KI-Assistenten](ki-assistenten.md); was e
 | `rechnungen:entwuerfe` | dazu `POST /rechnungen`, `PATCH /rechnungen/{id}`, `DELETE /rechnungen/{id}` |
 | `belege:lesen` | `GET /belege`, `GET /belege/{id}` |
 | `belege:anlegen` | dazu `POST /belege` |
+| `belege:auslesen` | `GET /belege`, `GET /belege/{id}` und `POST /belege/{id}/auslesung` |
 | `haben:lesen` | nur die Werkzeuge über [MCP](ki-assistenten.md), nicht die REST-API |
 
 Schreiben und anlegen schließen lesen ein. Ein Token ohne das nötige Recht bekommt `403`.
@@ -181,7 +182,7 @@ Ein Dokumentenarchiv, ein Scanner mit eigenem Skript oder ein Werkzeug, das Rech
 - **Formate und Größe** wie beim Upload: PDF, JPEG, PNG, WebP, HEIC und E-Rechnungs-XML (XRechnung, ZUGFeRD), höchstens 20 MB. Haben erkennt das Format am Inhalt, nicht am Dateinamen. Genau eine Datei je Anfrage, im Feld `datei` oder `file` (für Werkzeuge mit festem Feldnamen wie [Paperless-ngx](#paperless-ngx)); beide zugleich lehnt die API mit `400` ab.
 - **Auslesen:** Eine E-Rechnung liest Haben sofort, die Antwort enthält dann schon Lieferant, Nummer, Datum und Beträge. Andere PDFs und Fotos liest die [KI-Auslesung](belege.md#ki-auslesung) im Hintergrund, wenn sie eingerichtet ist; bis dahin steht `extractionStatus` auf `laeuft`.
 - **Nichts wird gebucht.** Der Beleg steht unter Belege als „Zu prüfen“ (`status: "neu"`). Kategorie, Zahlungsweg und Buchen bleiben in Haben.
-- **Vorbelegen** lässt sich nur eine Notiz (`note`). Lieferant, Nummer, Datum und Beträge nimmt die API bewusst nicht an: Sie kommen aus der E-Rechnung oder der Auslesung, die sie sonst überschriebe, und geprüft werden sie ohnehin in Haben.
+- **Vorbelegen** lässt sich beim Hochladen nur eine Notiz (`note`). Lieferant, Nummer, Datum und Beträge nimmt `POST /belege` bewusst nicht an: Sie kommen aus der E-Rechnung oder der Auslesung, die sie sonst überschriebe, und geprüft werden sie ohnehin in Haben. Hat dein Werkzeug den Beleg selbst gelesen, liefert es die Werte danach als [gelieferte Auslesung](#gelieferte-auslesung).
 
 Hochladen, mit einer Referenz auf das Dokument im Archiv:
 
@@ -231,6 +232,32 @@ curl -s "$HABEN/belege/0c9a…" -H "Authorization: Bearer $TOKEN"
 ```
 
 `status` ist `neu` („Zu prüfen“) oder `gebucht`, `booked` und `bookedAt` sagen dasselbe als Wahrheitswert und Zeitpunkt. Ein stornierter Beleg bleibt `gebucht`; `cancelledOn` nennt dann das Datum der Gegenbuchung (sonst `null`; siehe [Stornieren](belege.md#stornieren-und-neu-erfassen)), und in der Einzelansicht zeigt `replacedById` auf seine Neuerfassung, `replacesId` umgekehrt von der Neuerfassung auf den stornierten Beleg ([Stornieren und neu erfassen](belege.md#stornieren-und-neu-erfassen)). Ein gebuchter Beleg ist gesperrt und versiegelt, mit seiner Referenz ([Hash-Kette und Siegel](buchhaltung.md#manipulationserkennung-hash-kette-und-siegel)); dieselbe Referenz liefert dann weiter diesen Beleg. Löschst du einen ungebuchten Beleg in Haben, ist seine Referenz wieder frei. Die Datei selbst gibt die API nicht heraus, und ändern oder löschen lässt sich ein Beleg nur in Haben.
+
+### Gelieferte Auslesung
+
+Ein KI-Assistent oder ein Werkzeug, das den Beleg selbst gelesen hat, schickt die Werte mit `POST /belege/{id}/auslesung` (Recht `belege:auslesen`). So liest zum Beispiel ein Assistent, der ohnehin für dich arbeitet, deine Belege aus, ohne dass Haben einen KI-Dienst aufruft; einen `ANTHROPIC_API_KEY` oder `EXTRACTION_BASE_URL` braucht es dafür nicht.
+
+Der Body hat dasselbe Format wie die Antwort der [KI-Auslesung](belege.md#ki-auslesung): Beträge als Dezimaltext je Steuersatz (19, 7 oder 0), Daten als `JJJJ-MM-TT`, was nicht auf dem Beleg steht, ist `null`.
+
+```sh
+curl -s -X POST "$HABEN/belege/0c9a…/auslesung" -H "Authorization: Bearer $TOKEN" -H "Content-Type: application/json" -d '{
+  "lieferant": "Telekom Deutschland GmbH", "lieferantUstId": "DE123475223",
+  "empfaenger": "Erika Muster", "empfaengerUstId": null,
+  "rechnungsnummer": "MF-2026-10", "belegdatum": "2026-10-29", "faelligAm": null,
+  "waehrung": "EUR", "istGutschrift": false,
+  "betraege": [{ "steuersatz": "19", "netto": "38.57", "steuer": "7.33" }],
+  "brutto": "45.90", "kategorie": "telefon", "hinweis": null
+}'
+```
+
+Die Werte gehen denselben Weg wie die einer KI-Auslesung:
+
+- Haben prüft Beträge, Daten und Summen. Weicht die Summe aus Netto und Steuer vom Brutto ab, steht das als Hinweis am Beleg (`extractionError`), ebenso dein `hinweis`.
+- Kategorie und Zahlungsweg aus früheren Belegen desselben Lieferanten gehen dem Vorschlag vor; eine eigene Ausgangsrechnung erkennt Haben wie sonst auch.
+- Der Beleg bleibt „Zu prüfen“ und trägt wie bei der KI-Auslesung `extractedBy: "ki"`. Gebucht wird nur mit **Bestätigen und buchen** in Haben. Im Änderungsprotokoll steht das Token als Akteur.
+- Erneut senden ersetzt die Werte und verwirft eine Aufteilung auf mehrere Kategorien, wie **Mit KI neu auslesen**.
+
+Mit `422` abgelehnt wird, was Haben selbst besser weiß oder nicht mehr ändern darf: ein gebuchter Beleg, eine E-Rechnung (ihre Werte stehen in der Datei) und ein Beleg, dessen Auslesung gerade läuft.
 
 ### Paperless-ngx
 

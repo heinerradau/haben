@@ -1,5 +1,6 @@
 import type { z } from "zod";
 import {
+  applySuppliedExtraction,
   bookingIssues,
   documentCancellation,
   documentFileProblem,
@@ -10,7 +11,7 @@ import {
   type DocumentReference,
 } from "../belege/index.ts";
 import { fail, notFound, ok, validate, type ApiRequest, type ApiResult } from "./http.ts";
-import { documentQuerySchema, documentUploadSchema, type documentSchema, type documentSummarySchema } from "./schemas.ts";
+import { documentExtractionSchema, documentQuerySchema, documentUploadSchema, type documentSchema, type documentSummarySchema } from "./schemas.ts";
 
 /*
  * Belege über die REST-API (#104): eigene Werkzeuge, Dokumentenarchive und Skripte liefern Eingangsbelege, die wie beim
@@ -136,4 +137,16 @@ export async function createDocumentHandler(request: ApiRequest): Promise<ApiRes
   const { id, duplicate } = await uploadDocument(request.actor, file, { background: inBackground, note, ...(reference ? { reference } : {}) });
   if (duplicate) return existing(id, reference, request);
   return respondWith(id, request, 201, { Location: location(id) });
+}
+
+/**
+ * Gelieferte Auslesung: Das Werkzeug hat den Beleg selbst gelesen und schickt die Werte. Sie gehen denselben Weg wie die
+ * Antwort der KI-Auslesung; der Beleg bleibt „Zu prüfen“. Gebuchte Belege und E-Rechnungen lehnt das Modul ab (422).
+ */
+export async function supplyExtractionHandler(request: ApiRequest): Promise<ApiResult> {
+  const input = validate(documentExtractionSchema, request.body);
+  if ("failure" in input) return input.failure;
+  const id = request.params.id!;
+  if (!(await applySuppliedExtraction(request.actor, id, input.data))) return notFound(DOCUMENT_NOT_FOUND);
+  return respondWith(id, request);
 }

@@ -1,6 +1,6 @@
 import { PRICE_MODES, TAX_TREATMENT_KEYS } from "@haben/core";
 import { z } from "zod";
-import { documentReferenceSchema, MAX_DOCUMENT_SIZE } from "../belege/index.ts";
+import { documentReferenceSchema, MAX_DOCUMENT_SIZE, suppliedExtractionSchema } from "../belege/index.ts";
 import { draftSchema, externalReferenceSchema } from "../rechnungen/index.ts";
 import { contactSchema as contactInputSchema } from "../stammdaten/index.ts";
 
@@ -316,6 +316,12 @@ export const documentUploadSchema = z
     path: ["externalId"],
   })
   .register(requestSchemas, { id: "DocumentUpload" });
+
+/**
+ * Werte, die ein Werkzeug oder KI-Assistent selbst aus dem Beleg gelesen hat; dasselbe Schema wie die Antwort der
+ * KI-Auslesung, mit denselben Prüfungen danach.
+ */
+export const documentExtractionSchema = suppliedExtractionSchema.register(requestSchemas, { id: "DocumentExtraction" });
 
 const documentSummaryShape = {
   id: z.uuid(),

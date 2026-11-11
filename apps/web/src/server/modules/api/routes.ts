@@ -3,7 +3,7 @@ import { MAX_DOCUMENT_SIZE } from "../belege/index.ts";
 import type { TokenScope } from "../mcp/index.ts";
 import { createContactHandler, getContactHandler, listContactsHandler, updateContactHandler } from "./contacts.ts";
 import type { Handler } from "./http.ts";
-import { createDocumentHandler, getDocumentHandler, listDocumentsHandler } from "./documents.ts";
+import { createDocumentHandler, getDocumentHandler, listDocumentsHandler, supplyExtractionHandler } from "./documents.ts";
 import { createInvoiceHandler, deleteInvoiceHandler, getInvoiceHandler, listInvoicesHandler, updateInvoiceHandler } from "./invoices.ts";
 import { contactQuerySchema, documentQuerySchema, invoiceQuerySchema } from "./schemas.ts";
 
@@ -179,5 +179,20 @@ export const API_ROUTES: ApiRoute[] = [
     description: "Stand der Prüfung: Status, ob gebucht, was vor dem Buchen noch fehlt, und der Link zur Seite in Haben.",
     responses: { 200: { schema: "Document", description: "Der Beleg" } },
     handler: getDocumentHandler,
+  },
+  {
+    method: "POST",
+    path: "/belege/{id}/auslesung",
+    scope: "belege:auslesen",
+    tag: "Belege",
+    summary: "Ausgelesene Werte liefern",
+    description:
+      "Für Werkzeuge und KI-Assistenten, die den Beleg selbst gelesen haben: Lieferant, Nummer, Datum, Beträge je Steuersatz und ein Vorschlag für " +
+      "die Kategorie, im selben Format wie die Antwort der KI-Auslesung. Haben prüft Beträge, Daten und Summen wie dort und schreibt Abweichungen an " +
+      "den Beleg (extractionError). Der Beleg bleibt „Zu prüfen“; gebucht wird in Haben. Erneut senden ersetzt die Werte, solange nicht gebucht ist. " +
+      "422, wenn der Beleg gebucht, eine E-Rechnung oder gerade in der Auslesung ist.",
+    requestBody: "DocumentExtraction",
+    responses: { 200: { schema: "Document", description: "Der Beleg mit den übernommenen Werten" } },
+    handler: supplyExtractionHandler,
   },
 ];

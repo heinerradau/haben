@@ -31,6 +31,7 @@ export const TOKEN_SCOPES = [
   "rechnungen:entwuerfe",
   "belege:lesen",
   "belege:anlegen",
+  "belege:auslesen",
 ] as const;
 export type TokenScope = (typeof TOKEN_SCOPES)[number];
 
@@ -43,6 +44,7 @@ export const TOKEN_SCOPE_LABELS: Record<TokenScope, string> = {
   "rechnungen:entwuerfe": "API: Rechnungen lesen, Entwürfe anlegen, ändern und löschen",
   "belege:lesen": "API: Belege lesen",
   "belege:anlegen": "API: Belege lesen und hochladen (landen als „Zu prüfen“)",
+  "belege:auslesen": "API: Belege lesen und selbst ausgelesene Werte liefern (bleiben „Zu prüfen“)",
 };
 
 /** Ein Recht schließt ein anderes mit ein: wer schreiben darf, darf auch lesen */
@@ -50,6 +52,7 @@ const IMPLIED: Partial<Record<TokenScope, TokenScope>> = {
   "kontakte:schreiben": "kontakte:lesen",
   "rechnungen:entwuerfe": "rechnungen:lesen",
   "belege:anlegen": "belege:lesen",
+  "belege:auslesen": "belege:lesen",
 };
 
 export function hasScope(granted: readonly TokenScope[], needed: TokenScope): boolean {

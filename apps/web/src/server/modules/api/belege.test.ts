@@ -365,4 +365,97 @@ describe.skipIf(!testDatabaseUrl)("REST-API /api/v1/belege (Postgres)", () => {
       expect((await send(t, "DELETE", `/belege/${a.id}`)).status).toBe(405);
     });
   });
+
+  describe("Gelieferte Auslesung", () => {
+    const werte = {
+      lieferant: "Telekom Deutschland GmbH",
+      lieferantUstId: "DE 123 475 223",
+      empfaenger: "Testfirma",
+      empfaengerUstId: null,
+      rechnungsnummer: "MF-2026-10",
+      belegdatum: "2026-10-29",
+      faelligAm: null,
+      waehrung: "EUR",
+      istGutschrift: false,
+      betraege: [{ steuersatz: "19", netto: "38.57", steuer: "7.33" }],
+      brutto: "45.90",
+      kategorie: "telefon",
+      hinweis: null,
+    };
+    const liefern = (t: string, id: unknown, body: unknown) =>
+      send(t, "POST", `/belege/${id as string}/auslesung`, { body: JSON.stringify(body), headers: { "Content-Type": "application/json" } });
+
+    it("braucht das Recht belege:auslesen; Hochladen allein reicht nicht", async () => {
+      const anlegen = await token(["belege:anlegen"]);
+      const beleg = (await upload(anlegen, jpeg(60))).json!;
+      const forbidden = await liefern(anlegen, beleg.id, werte);
+      expect(forbidden.status).toBe(403);
+      expect(forbidden.json!.error!.message).toContain("belege:auslesen");
+      const auslesen = await token(["belege:auslesen"]);
+      expect((await send(auslesen, "GET", `/belege/${beleg.id as string}`)).status).toBe(200);
+      expect((await upload(auslesen, jpeg(61))).status).toBe(403);
+      expect((await liefern(auslesen, beleg.id, werte)).status).toBe(200);
+    });
+
+    it("übernimmt die Werte wie eine KI-Auslesung, bucht nichts und protokolliert das Token als Akteur", async () => {
+      const t = await token(["belege:anlegen", "belege:auslesen"]);
+      const beleg = (await upload(t, jpeg(62))).json!;
+      const antwort = await liefern(t, beleg.id, werte);
+      expect(antwort.status).toBe(200);
+      expect(schemas.documentSchema.parse(antwort.json)).toMatchObject({
+        id: beleg.id,
+        status: "neu",
+        booked: false,
+        extractionStatus: "fertig",
+        extractedBy: "ki",
+        extractionError: null,
+        supplierName: "Telekom Deutschland GmbH",
+        supplierUstId: "DE123475223",
+        invoiceNumber: "MF-2026-10",
+        documentDate: "2026-10-29",
+        category: "telefon",
+        net: 3857,
+        tax: 733,
+        gross: 4590,
+        amounts: [{ taxRate: 1900, net: 3857, tax: 733 }],
+      });
+      expect((await sql`select count(*)::int as n from journal_entries`)[0]!.n).toBe(0);
+      const [audit] = await sql`select actor from audit_log where table_name = 'documents' and action = 'UPDATE' order by seq desc limit 1`;
+      expect(audit!.actor).toBe(`api:${(await mcp.listMcpTokens())[0]!.id}:Dokumentenarchiv`);
+
+      // Erneut liefern ersetzt die Werte; eine Gutschrift zählt negativ, eine falsche Summe steht als Hinweis am Beleg
+      const korrigiert = await liefern(t, beleg.id, { ...werte, istGutschrift: true, brutto: "50.00", hinweis: "Stempel verdeckt die Summe" });
+      expect(schemas.documentSchema.parse(korrigiert.json)).toMatchObject({ gross: -4590, amounts: [{ taxRate: 1900, net: -3857, tax: -733 }] });
+      expect(korrigiert.json!.extractionError).toContain("Summe aus Netto und Steuer weicht vom Gesamtbetrag ab");
+      expect(korrigiert.json!.extractionError).toContain("Stempel verdeckt die Summe");
+    });
+
+    it("lehnt unvollständige Werte, unbekannte Belege, gebuchte Belege und E-Rechnungen ab", async () => {
+      const t = await token(["belege:anlegen", "belege:auslesen"]);
+      const beleg = (await upload(t, jpeg(63))).json!;
+      const { kategorie: _ohne, ...unvollstaendig } = werte;
+      expect((await liefern(t, beleg.id, unvollstaendig)).status).toBe(400);
+      expect((await liefern(t, beleg.id, { ...werte, betraege: [{ steuersatz: "16", netto: "1", steuer: "0.16" }] })).status).toBe(400);
+      expect((await liefern(t, "00000000-0000-4000-8000-000000000000", werte)).status).toBe(404);
+      expect(schemas.documentSchema.parse((await send(t, "GET", `/belege/${beleg.id as string}`)).json)).toMatchObject({ extractionStatus: "keine", gross: 0 });
+
+      expect((await liefern(t, beleg.id, werte)).status).toBe(200);
+      await belege.updateDocument(actor, beleg.id as string, {
+        supplierName: "Telekom Deutschland GmbH",
+        supplierUstId: "",
+        invoiceNumber: "MF-2026-10",
+        documentDate: "2026-10-29",
+        dueDate: null,
+        category: "telefon",
+        payment: "bank",
+        note: "",
+        amounts: [{ taxRate: 1900, net: 3857, tax: 733 }],
+      });
+      await belege.bookDocument(actor, beleg.id as string);
+      const gebucht = await liefern(t, beleg.id, { ...werte, rechnungsnummer: "ANDERS" });
+      expect(gebucht.status).toBe(422);
+      expect(gebucht.json!.error!.message).toContain("gebucht");
+      expect((await send(t, "GET", `/belege/${beleg.id as string}`)).json).toMatchObject({ invoiceNumber: "MF-2026-10", status: "gebucht" });
+    });
+  });
 });
