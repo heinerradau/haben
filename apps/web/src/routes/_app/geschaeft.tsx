@@ -114,6 +114,47 @@ function ZweigTabelle({ uebersicht }: { uebersicht: Uebersicht }) {
   );
 }
 
+/** Je Jahr drei Balken: was die Arbeit für andere übrig lässt, was das eigene Geschäft bringt oder kostet, was der Betrieb kostet */
+function JahresBalken({ uebersicht }: { uebersicht: Uebersicht }) {
+  const { jahre, zweige } = uebersicht;
+  const wert = (zweig: BereichZweig, jahr: number) => zweige[zweig][jahr]?.ergebnis ?? 0;
+  const max = Math.max(1, ...jahre.flatMap((jahr) => GEWERTET.map((zweig) => Math.abs(wert(zweig, jahr)))));
+  return (
+    <section className="card" aria-labelledby="balken-heading">
+      <h2 id="balken-heading" style={{ margin: 0, fontSize: 16 }}>
+        Trägt sich das?
+      </h2>
+      <p className="small muted" style={{ margin: "4px 0 12px" }}>
+        Ergebnis je Zweig und Jahr. Nach rechts: bringt Geld. Nach links: kostet Geld.
+      </p>
+      <div className="geschaeft-balken" role="img" aria-label="Balkendiagramm: Ergebnis je Zweig und Jahr; die Zahlen stehen in der Tabelle darunter">
+        {jahre.map((jahr) => (
+          <div key={jahr} className="geschaeft-balken-jahr">
+            <div className="geschaeft-balken-label">{jahr}</div>
+            <div className="geschaeft-balken-reihen">
+              {GEWERTET.map((zweig) => {
+                const cents = wert(zweig, jahr);
+                const breite = `${(Math.abs(cents) / max) * 50}%`;
+                return (
+                  <div key={zweig} className="geschaeft-balken-reihe">
+                    <span className="small muted">{BEREICH_ZWEIG_LABEL[zweig]}</span>
+                    <div className="geschaeft-balken-spur">
+                      <div className={cents < 0 ? "geschaeft-balken-minus" : "geschaeft-balken-plus"} style={{ width: breite }} />
+                    </div>
+                    <span className="num" style={{ color: ergebnisFarbe(cents) }}>
+                      {formatEuro(cents)}
+                    </span>
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+        ))}
+      </div>
+    </section>
+  );
+}
+
 function Zelle({ summe }: { summe: BereichSumme }) {
   if (summe.posten === 0) return <td className="num muted">–</td>;
   return (
@@ -121,11 +162,8 @@ function Zelle({ summe }: { summe: BereichSumme }) {
       <span className="mono" style={{ color: ergebnisFarbe(summe.ergebnis) }}>
         {formatEuro(summe.ergebnis)}
       </span>
-      <div className="small muted">
-        {summe.einnahmen !== 0 && <>+{formatEuro(summe.einnahmen)}</>}
-        {summe.einnahmen !== 0 && summe.ausgaben !== 0 && " "}
-        {summe.ausgaben !== 0 && <>−{formatEuro(summe.ausgaben)}</>}
-      </div>
+      {summe.einnahmen !== 0 && <div className="small muted">+{formatEuro(summe.einnahmen)}</div>}
+      {summe.ausgaben !== 0 && <div className="small muted">−{formatEuro(summe.ausgaben)}</div>}
     </td>
   );
 }
@@ -261,6 +299,7 @@ function GeschaeftPage() {
               hinweis={`${uebersicht.quellen.regel + uebersicht.quellen.hand} Posten zugeordnet, ${uebersicht.quellen.offen} offen`}
             />
           </div>
+          <JahresBalken uebersicht={uebersicht} />
           <ZweigTabelle uebersicht={uebersicht} />
           <BereichTabelle uebersicht={uebersicht} gewaehlt={bereich} jahr={jahr} />
         </>
