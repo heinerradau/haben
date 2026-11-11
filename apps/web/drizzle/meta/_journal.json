@@ -1429,6 +1429,20 @@
       "when": 1794400327111,
       "tag": "0203_spende",
       "breakpoints": true
+    },
+    {
+      "idx": 204,
+      "version": "7",
+      "when": 1794411450179,
+      "tag": "0204_geschaeftsbereiche",
+      "breakpoints": true
+    },
+    {
+      "idx": 205,
+      "version": "7",
+      "when": 1794411451234,
+      "tag": "0205_geschaeftsbereiche_trigger",
+      "breakpoints": true
     }
   ]
 }

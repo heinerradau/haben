@@ -87,6 +87,8 @@ const NAV_GROUPS = [
     label: "Buchhaltung",
     links: [
       { to: "/auswertungen", icon: "reports", label: "Auswertungen" },
+      // Auswertung nach Bereichen des Betriebs über den archivierten Altbestand
+      { to: "/geschaeft", icon: "reports", label: "Geschäftsbereiche" },
       { to: "/buchungen", icon: "journal", label: "Buchungen" },
       { to: "/konten", icon: "ledger", label: "Konten" },
       // Bilanz und Abschluss gibt es nur für GmbH und UG

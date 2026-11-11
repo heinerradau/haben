@@ -21,6 +21,7 @@ import { Route as AppDarlehenRouteImport } from './routes/_app/darlehen'
 import { Route as AppEinstellungenRouteImport } from './routes/_app/einstellungen'
 import { Route as AppFinanzamtRouteImport } from './routes/_app/finanzamt'
 import { Route as AppFristenRouteImport } from './routes/_app/fristen'
+import { Route as AppGeschaeftRouteImport } from './routes/_app/geschaeft'
 import { Route as AppKasseRouteImport } from './routes/_app/kasse'
 import { Route as AppLastschriftenRouteImport } from './routes/_app/lastschriften'
 import { Route as AppPauschalenRouteImport } from './routes/_app/pauschalen'
@@ -172,6 +173,11 @@ const AppFinanzamtRoute = AppFinanzamtRouteImport.update({
 const AppFristenRoute = AppFristenRouteImport.update({
   id: '/fristen',
   path: '/fristen',
+  getParentRoute: () => AppRoute,
+} as any)
+const AppGeschaeftRoute = AppGeschaeftRouteImport.update({
+  id: '/geschaeft',
+  path: '/geschaeft',
   getParentRoute: () => AppRoute,
 } as any)
 const AppKasseRoute = AppKasseRouteImport.update({
@@ -665,6 +671,7 @@ export interface FileRoutesByFullPath {
   '/einstellungen': typeof AppEinstellungenRoute
   '/finanzamt': typeof AppFinanzamtRoute
   '/fristen': typeof AppFristenRoute
+  '/geschaeft': typeof AppGeschaeftRoute
   '/kasse': typeof AppKasseRoute
   '/lastschriften': typeof AppLastschriftenRoute
   '/pauschalen': typeof AppPauschalenRoute
@@ -770,6 +777,7 @@ export interface FileRoutesByTo {
   '/einstellungen': typeof AppEinstellungenRoute
   '/finanzamt': typeof AppFinanzamtRoute
   '/fristen': typeof AppFristenRoute
+  '/geschaeft': typeof AppGeschaeftRoute
   '/kasse': typeof AppKasseRoute
   '/lastschriften': typeof AppLastschriftenRoute
   '/pauschalen': typeof AppPauschalenRoute
@@ -878,6 +886,7 @@ export interface FileRoutesById {
   '/_app/einstellungen': typeof AppEinstellungenRoute
   '/_app/finanzamt': typeof AppFinanzamtRoute
   '/_app/fristen': typeof AppFristenRoute
+  '/_app/geschaeft': typeof AppGeschaeftRoute
   '/_app/kasse': typeof AppKasseRoute
   '/_app/lastschriften': typeof AppLastschriftenRoute
   '/_app/pauschalen': typeof AppPauschalenRoute
@@ -987,6 +996,7 @@ export interface FileRouteTypes {
     | '/einstellungen'
     | '/finanzamt'
     | '/fristen'
+    | '/geschaeft'
     | '/kasse'
     | '/lastschriften'
     | '/pauschalen'
@@ -1092,6 +1102,7 @@ export interface FileRouteTypes {
     | '/einstellungen'
     | '/finanzamt'
     | '/fristen'
+    | '/geschaeft'
     | '/kasse'
     | '/lastschriften'
     | '/pauschalen'
@@ -1199,6 +1210,7 @@ export interface FileRouteTypes {
     | '/_app/einstellungen'
     | '/_app/finanzamt'
     | '/_app/fristen'
+    | '/_app/geschaeft'
     | '/_app/kasse'
     | '/_app/lastschriften'
     | '/_app/pauschalen'
@@ -1427,6 +1439,13 @@ declare module '@tanstack/react-router' {
       path: '/fristen'
       fullPath: '/fristen'
       preLoaderRoute: typeof AppFristenRouteImport
+      parentRoute: typeof AppRoute
+    }
+    '/_app/geschaeft': {
+      id: '/_app/geschaeft'
+      path: '/geschaeft'
+      fullPath: '/geschaeft'
+      preLoaderRoute: typeof AppGeschaeftRouteImport
       parentRoute: typeof AppRoute
     }
     '/_app/kasse': {
@@ -2092,6 +2111,7 @@ interface AppRouteChildren {
   AppEinstellungenRoute: typeof AppEinstellungenRoute
   AppFinanzamtRoute: typeof AppFinanzamtRoute
   AppFristenRoute: typeof AppFristenRoute
+  AppGeschaeftRoute: typeof AppGeschaeftRoute
   AppKasseRoute: typeof AppKasseRoute
   AppLastschriftenRoute: typeof AppLastschriftenRoute
   AppPauschalenRoute: typeof AppPauschalenRoute
@@ -2155,6 +2175,7 @@ const AppRouteChildren: AppRouteChildren = {
   AppEinstellungenRoute: AppEinstellungenRoute,
   AppFinanzamtRoute: AppFinanzamtRoute,
   AppFristenRoute: AppFristenRoute,
+  AppGeschaeftRoute: AppGeschaeftRoute,
   AppKasseRoute: AppKasseRoute,
   AppLastschriftenRoute: AppLastschriftenRoute,
   AppPauschalenRoute: AppPauschalenRoute,

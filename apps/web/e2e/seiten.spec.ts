@@ -61,6 +61,7 @@ async function routes(page: Page): Promise<[string, string | null][]> {
     ["finanzamt", "/finanzamt"],
     ["fristen", "/fristen"],
     ["auswertungen", "/auswertungen"],
+    ["geschaeftsbereiche", "/geschaeft"],
     ["kontakte", "/kontakte"],
     ["kontakt", details.kontakt],
     ["archiv", "/archiv"],

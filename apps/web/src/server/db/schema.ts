@@ -25,6 +25,8 @@ import {
 import type { Buyer, Seller } from "@haben/einvoice";
 import type { LetterheadDesign } from "@haben/core";
 import {
+  BEREICH_REGEL_FELDER,
+  BEREICH_ZWEIGE,
   ASSET_KIND_KEYS,
   ASSET_METHOD_KEYS,
   PAYMENT_METHODS,
@@ -3330,3 +3332,55 @@ export const externalImports = pgTable(
     ),
   ],
 );
+
+/**
+ * Geschäftsbereiche: Bereiche eines Betriebs (etwa „Auftragsarbeit“, „Online-Shop“, „Fahrzeug“), denen die Auswertung
+ * unter /geschaeft Belege zuordnet. Der Zweig sagt, wozu ein Bereich gehört (BEREICH_ZWEIGE in @haben/core).
+ * Einstellungen der Auswertung, keine Buchungsdaten: frei änderbar, jede Änderung steht im Änderungsprotokoll.
+ */
+export const businessAreas = pgTable("business_areas", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  name: text("name").notNull().unique(),
+  zweig: text("zweig", { enum: BEREICH_ZWEIGE }).notNull(),
+  /** Reihenfolge in der Auswertung, aufsteigend */
+  sortierung: integer("sortierung").notNull().default(0),
+  createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+  updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
+});
+
+/** Regel, die Belege einem Geschäftsbereich zuordnet: Feld enthält Muster (Teilzeichenkette, Groß- und Kleinschreibung egal) */
+export const businessAreaRules = pgTable(
+  "business_area_rules",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    areaId: uuid("area_id")
+      .notNull()
+      .references(() => businessAreas.id, { onDelete: "cascade" }),
+    /** null: gilt für Einnahmen und Ausgaben */
+    richtung: text("richtung", { enum: ["einnahme", "ausgabe"] }),
+    feld: text("feld", { enum: BEREICH_REGEL_FELDER }).notNull(),
+    muster: text("muster").notNull(),
+    /** Höhere Zahl gewinnt */
+    rang: integer("rang").notNull().default(0),
+    /** Reihenfolge innerhalb der Liste, entscheidet bei gleichem Rang und gleich langem Muster */
+    position: integer("position").notNull().default(0),
+    createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+  },
+  (t) => [index("business_area_rules_area").on(t.areaId)],
+);
+
+/**
+ * Zuordnung von Hand: ein archivierter Beleg gehört zu diesem Bereich, egal was die Regeln sagen. Der Beleg selbst
+ * (lexoffice_vouchers, unveränderlich) bleibt unberührt.
+ */
+export const businessAreaAssignments = pgTable("business_area_assignments", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  voucherId: uuid("voucher_id")
+    .notNull()
+    .unique()
+    .references(() => lexofficeVouchers.id),
+  areaId: uuid("area_id")
+    .notNull()
+    .references(() => businessAreas.id, { onDelete: "cascade" }),
+  createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+});
