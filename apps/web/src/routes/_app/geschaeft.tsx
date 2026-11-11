@@ -4,6 +4,7 @@ import { useServerFn } from "@tanstack/react-start";
 import { z } from "zod/mini";
 import { BereichslisteCard } from "../../components/geschaeft/BereichslisteCard.tsx";
 import { PostenCard } from "../../components/geschaeft/PostenCard.tsx";
+import { WarenCard } from "../../components/geschaeft/WarenCard.tsx";
 import { NoticeBanner } from "../../components/NoticeBanner.tsx";
 import { ScrollTable } from "../../components/ScrollTable.tsx";
 import { useAction } from "../../lib/use-action.ts";
@@ -249,7 +250,7 @@ function BereichTabelle({ uebersicht, gewaehlt, jahr }: { uebersicht: Uebersicht
 }
 
 function GeschaeftPage() {
-  const { uebersicht, liste, posten } = Route.useLoaderData();
+  const { uebersicht, liste, waren, posten } = Route.useLoaderData();
   const { bereich, jahr } = Route.useSearch();
   const router = useRouter();
   const assign = useServerFn(assignBeleg);
@@ -314,6 +315,8 @@ function GeschaeftPage() {
           onAssign={zuordnen}
         />
       )}
+
+      {!leer && <WarenCard key={waren.stand ?? "leer"} bestand={waren} />}
 
       <BereichslisteCard liste={liste} offen={leer} />
 

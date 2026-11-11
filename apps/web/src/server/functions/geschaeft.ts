@@ -6,8 +6,11 @@ import {
   exportiereBereichsliste,
   geschaeftPosten,
   geschaeftUebersicht,
+  ladeWaren,
   ordneBelegZu,
   speichereBereichsliste,
+  speichereWarenliste,
+  warenlisteSchema,
 } from "../modules/geschaeft/index.ts";
 
 const filterSchema = z.object({
@@ -21,18 +24,24 @@ export const getGeschaeft = createServerFn({ method: "GET" })
   .middleware([authMiddleware])
   .validator(filterSchema)
   .handler(async ({ data }) => {
-    const [uebersicht, liste, posten] = await Promise.all([
+    const [uebersicht, liste, waren, posten] = await Promise.all([
       geschaeftUebersicht(),
       exportiereBereichsliste(),
+      ladeWaren(),
       data.bereich ? geschaeftPosten({ bereichId: data.bereich === "offen" ? null : data.bereich, jahr: data.jahr }) : null,
     ]);
-    return { uebersicht, liste, posten };
+    return { uebersicht, liste, waren, posten };
   });
 
 export const saveBereichsliste = createServerFn({ method: "POST" })
   .middleware([authMiddleware])
   .validator(bereichslisteSchema)
   .handler(({ data, context }) => speichereBereichsliste(context.user.id, data));
+
+export const saveWarenliste = createServerFn({ method: "POST" })
+  .middleware([authMiddleware])
+  .validator(warenlisteSchema)
+  .handler(({ data, context }) => speichereWarenliste(context.user.id, data));
 
 export const assignBeleg = createServerFn({ method: "POST" })
   .middleware([authMiddleware])

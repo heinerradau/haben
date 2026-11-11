@@ -17,7 +17,9 @@ describe.skipIf(!testDatabaseUrl)("Geschäftsbereiche (Postgres)", () => {
   });
 
   beforeEach(async () => {
-    await leeren(sql)`truncate business_area_assignments, business_area_rules, business_areas, lexoffice_vouchers, lexoffice_imports, audit_log cascade`;
+    await leeren(
+      sql,
+    )`truncate business_stock_items, business_area_assignments, business_area_rules, business_areas, lexoffice_vouchers, lexoffice_imports, audit_log cascade`;
     await sql`insert into lexoffice_imports (status, progress) values ('fertig', '{}'::jsonb)`;
   });
 
@@ -195,5 +197,28 @@ describe.skipIf(!testDatabaseUrl)("Geschäftsbereiche (Postgres)", () => {
     await geschaeft.ordneBelegZu(actor, id, (await geschaeft.ladeBereiche()).bereiche[0]!.id);
     const [nachher] = await sql`select md5(v::text) as stand from lexoffice_vouchers v where id = ${id}`;
     expect(nachher!.stand).toBe(vorher!.stand);
+  });
+
+  it("speichert den Warenbestand als Ganzes, protokolliert die Änderung und lehnt Doppeltes und Negatives ab", async () => {
+    const waren = [
+      { name: "Tasche", stueck: 978, einkaufCent: 196, preisCent: 850 },
+      { name: "Schirm", stueck: 89, einkaufCent: 441, preisCent: 1360 },
+    ];
+    expect(await geschaeft.speichereWarenliste(actor, { waren })).toEqual({ waren: 2 });
+    const geladen = await geschaeft.ladeWaren();
+    expect(geladen.waren).toEqual(waren);
+    expect(geladen.stand).not.toBeNull();
+    const [protokoll] = await sql`select count(*)::int as n from audit_log where table_name = 'business_stock_items' and actor = ${actor}`;
+    expect(protokoll!.n).toBe(2);
+
+    expect(await geschaeft.speichereWarenliste(actor, { waren: [waren[1]!] })).toEqual({ waren: 1 });
+    expect((await geschaeft.ladeWaren()).waren).toEqual([waren[1]]);
+
+    await expect(geschaeft.speichereWarenliste(actor, { waren: [waren[0]!, { ...waren[0]!, name: "tasche" }] })).rejects.toThrow(/doppelt/);
+    await expect(geschaeft.speichereWarenliste(actor, { waren: [{ ...waren[0]!, stueck: -1 }] })).rejects.toThrow();
+    expect((await geschaeft.ladeWaren()).waren).toHaveLength(1);
+
+    expect(await geschaeft.speichereWarenliste(actor, { waren: [] })).toEqual({ waren: 0 });
+    expect(await geschaeft.ladeWaren()).toEqual({ waren: [], stand: null });
   });
 });

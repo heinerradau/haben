@@ -3384,3 +3384,20 @@ export const businessAreaAssignments = pgTable("business_area_assignments", {
     .references(() => businessAreas.id, { onDelete: "cascade" }),
   createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
 });
+
+/**
+ * Warenbestand der Auswertung „Geschäftsbereiche“: was auf Lager liegt, was es gekostet hat und zu welchem Preis es
+ * realistisch verkauft wird. Eine selbst gepflegte Schätzung, keine Inventur: frei änderbar, jede Änderung steht im
+ * Änderungsprotokoll.
+ */
+export const businessStockItems = pgTable("business_stock_items", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  name: text("name").notNull().unique(),
+  stueck: integer("stueck").notNull(),
+  /** Einkaufspreis je Stück, netto in Cent */
+  einkaufCent: integer("einkauf_cent").notNull(),
+  /** Verkaufspreis je Stück (etwa der Händlerpreis), netto in Cent */
+  preisCent: integer("preis_cent").notNull(),
+  sortierung: integer("sortierung").notNull().default(0),
+  createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+});

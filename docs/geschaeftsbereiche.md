@@ -60,6 +60,25 @@ Die Liste wird als Ganzes gespeichert. Ein Bereich mit gleichem Namen bleibt der
 
 Ein Klick auf eine Zahl zeigt die Belege dahinter, die größten zuerst. In der Spalte „Bereich“ legst du für einen Beleg einen anderen Bereich fest; das geht den Regeln vor. „Wieder nach Regeln“ hebt die Zuordnung auf. Belege, auf die keine Regel passt, stehen unter „Noch nicht zugeordnet“.
 
+## Was in der Ware steckt
+
+Unter den Tabellen steht der Warenbestand: was auf Lager liegt, was es gekostet hat und was es beim Verkauf einbringt. So siehst du neben den Ausgaben für Ware auch, wie viel davon noch als Ware da ist.
+
+Die Liste pflegst du selbst unter **Warenbestand bearbeiten**, wie die Bereiche als JSON:
+
+```json
+{
+  "waren": [
+    { "name": "Stofftasche", "stueck": 400, "einkaufCent": 196, "preisCent": 850 },
+    { "name": "Regenschirm", "stueck": 89, "einkaufCent": 441, "preisCent": 1360 }
+  ]
+}
+```
+
+Die Preise stehen netto in Cent je Stück. Als „preisCent“ trägst du den Preis ein, zu dem du die Ware realistisch verkaufst, etwa deinen Händlerpreis; der Ladenpreis zeigt nur, was im besten Fall möglich wäre. Haben rechnet Stückzahl mal Preis und zieht nichts ab. Die Liste wird als Ganzes gespeichert, jede Änderung steht im Änderungsprotokoll.
+
+Das ist eine Schätzung für dich, keine Inventur: Haben zählt keinen Bestand mit und bucht nichts. In die EÜR geht der Wareneinkauf weiter mit der Zahlung ein.
+
 ## Was gezählt wird
 
 - Die archivierten Belege aus dem Umzug ([Lexoffice](lexoffice.md), [sevDesk](sevdesk.md) und die anderen Quellen im Archiv). Belege, die in Haben selbst entstehen, zählt die Seite noch nicht.

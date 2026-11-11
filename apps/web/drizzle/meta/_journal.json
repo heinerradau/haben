@@ -1443,6 +1443,20 @@
       "when": 1794411451234,
       "tag": "0205_geschaeftsbereiche_trigger",
       "breakpoints": true
+    },
+    {
+      "idx": 206,
+      "version": "7",
+      "when": 1794426336235,
+      "tag": "0206_warenbestand",
+      "breakpoints": true
+    },
+    {
+      "idx": 207,
+      "version": "7",
+      "when": 1794426337298,
+      "tag": "0207_warenbestand_trigger",
+      "breakpoints": true
     }
   ]
 }
