@@ -3,7 +3,7 @@ import { MAX_DOCUMENT_SIZE } from "../belege/index.ts";
 import type { TokenScope } from "../mcp/index.ts";
 import { createContactHandler, getContactHandler, listContactsHandler, updateContactHandler } from "./contacts.ts";
 import type { Handler } from "./http.ts";
-import { createDocumentHandler, getDocumentHandler, listDocumentsHandler, supplyExtractionHandler } from "./documents.ts";
+import { bookDocumentHandler, createDocumentHandler, getDocumentHandler, listDocumentsHandler, supplyExtractionHandler } from "./documents.ts";
 import { createInvoiceHandler, deleteInvoiceHandler, getInvoiceHandler, listInvoicesHandler, updateInvoiceHandler } from "./invoices.ts";
 import { contactQuerySchema, documentQuerySchema, invoiceQuerySchema } from "./schemas.ts";
 
@@ -194,5 +194,18 @@ export const API_ROUTES: ApiRoute[] = [
     requestBody: "DocumentExtraction",
     responses: { 200: { schema: "Document", description: "Der Beleg mit den übernommenen Werten" } },
     handler: supplyExtractionHandler,
+  },
+  {
+    method: "POST",
+    path: "/belege/{id}/buchung",
+    scope: "belege:buchen",
+    tag: "Belege",
+    summary: "Beleg buchen",
+    description:
+      "Bucht einen fertig geprüften Beleg wie der Knopf „Bestätigen und buchen“ in Haben und schreibt ihn fest; danach lässt er sich nur noch " +
+      "stornieren. Das Recht belege:buchen ist nie vorbelegt: Wer es einem Werkzeug gibt, überträgt ihm die Prüfung des Belegs. Vorher mit " +
+      "GET /belege/{id} die `issues` lesen; sind welche offen, ist der Beleg schon gebucht oder das Jahr abgeschlossen, antwortet die API mit 422.",
+    responses: { 200: { schema: "Document", description: "Der gebuchte Beleg" } },
+    handler: bookDocumentHandler,
   },
 ];

@@ -1,6 +1,7 @@
 import type { z } from "zod";
 import {
   applySuppliedExtraction,
+  bookDocument,
   bookingIssues,
   documentCancellation,
   documentFileProblem,
@@ -15,8 +16,8 @@ import { documentExtractionSchema, documentQuerySchema, documentUploadSchema, ty
 
 /*
  * Belege über die REST-API (#104): eigene Werkzeuge, Dokumentenarchive und Skripte liefern Eingangsbelege, die wie beim
- * Upload unter Belege als „Zu prüfen“ landen; dazu lesen sie den Stand. Prüfen, Buchen, Ändern und Löschen bleiben in
- * Haben, auf die Seite zeigt `url` in jeder Antwort.
+ * Upload unter Belege als „Zu prüfen“ landen; dazu lesen sie den Stand. Prüfen, Ändern und Löschen bleiben in Haben,
+ * auf die Seite zeigt `url` in jeder Antwort. Buchen ebenfalls, außer ein Token hat ausdrücklich das Recht belege:buchen.
  */
 
 type ListRow = Omit<Awaited<ReturnType<typeof listDocuments>>[number], "splitCount">;
@@ -148,5 +149,16 @@ export async function supplyExtractionHandler(request: ApiRequest): Promise<ApiR
   if ("failure" in input) return input.failure;
   const id = request.params.id!;
   if (!(await applySuppliedExtraction(request.actor, id, input.data))) return notFound(DOCUMENT_NOT_FOUND);
+  return respondWith(id, request);
+}
+
+/**
+ * Bucht einen Beleg wie „Bestätigen und buchen“ in Haben: dieselben Prüfungen, dieselbe Buchung, danach festgeschrieben.
+ * Nur mit dem Recht belege:buchen. Fehlt noch etwas (`issues`) oder ist der Beleg schon gebucht, lehnt das Modul ab (422).
+ */
+export async function bookDocumentHandler(request: ApiRequest): Promise<ApiResult> {
+  const id = request.params.id!;
+  if (!(await getDocument(id))) return notFound(DOCUMENT_NOT_FOUND);
+  await bookDocument(request.actor, id);
   return respondWith(id, request);
 }

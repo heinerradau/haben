@@ -109,7 +109,8 @@ async function readMultipart(request: Request, limit: number): Promise<{ body: u
 }
 
 function readBody(route: ApiRoute, request: Request): Promise<{ body: unknown } | { failure: ApiResult }> {
-  if (!WITH_BODY.has(route.method)) return Promise.resolve({ body: undefined });
+  // Ohne beschriebenen Body (etwa POST /belege/{id}/buchung) wird keiner gelesen und kein Content-Type verlangt
+  if (!WITH_BODY.has(route.method) || route.requestBody === undefined) return Promise.resolve({ body: undefined });
   return route.multipartLimit ? readMultipart(request, route.multipartLimit) : readJson(request);
 }
 

@@ -457,5 +457,42 @@ describe.skipIf(!testDatabaseUrl)("REST-API /api/v1/belege (Postgres)", () => {
       expect(gebucht.json!.error!.message).toContain("gebucht");
       expect((await send(t, "GET", `/belege/${beleg.id as string}`)).json).toMatchObject({ invoiceNumber: "MF-2026-10", status: "gebucht" });
     });
+
+    describe("Buchen über die API", () => {
+      const buchen = (t: string, id: unknown) => send(t, "POST", `/belege/${id as string}/buchung`);
+
+      it("braucht das Recht belege:buchen; Hochladen und Auslesen reichen nicht", async () => {
+        const liefernder = await token(["belege:anlegen", "belege:auslesen"]);
+        const beleg = (await upload(liefernder, jpeg(64))).json!;
+        expect((await liefern(liefernder, beleg.id, werte)).status).toBe(200);
+        const verboten = await buchen(liefernder, beleg.id);
+        expect(verboten.status).toBe(403);
+        expect(verboten.json!.error!.message).toContain("belege:buchen");
+        expect((await sql`select count(*)::int as n from journal_entries`)[0]!.n).toBe(0);
+      });
+
+      it("bucht einen fertigen Beleg wie der Knopf in Haben, mit dem Token als Akteur, und nur einmal", async () => {
+        const t = await token(["belege:anlegen", "belege:auslesen", "belege:buchen"]);
+        const beleg = (await upload(t, jpeg(65))).json!;
+        // Ohne Werte fehlt noch alles: abgelehnt, nichts gebucht
+        const unfertig = await buchen(t, beleg.id);
+        expect(unfertig.status).toBe(422);
+        expect(unfertig.json!.error!.message).toContain("Noch nicht bereit");
+        expect((await liefern(t, beleg.id, werte)).status).toBe(200);
+        expect((await send(t, "GET", `/belege/${beleg.id as string}`)).json!.issues).toEqual([]);
+
+        const gebucht = await buchen(t, beleg.id);
+        expect(gebucht.status).toBe(200);
+        expect(schemas.documentSchema.parse(gebucht.json)).toMatchObject({ id: beleg.id, status: "gebucht", booked: true, gross: 4590 });
+        const [buchung] = await sql`select source_type, source_id from journal_entries`;
+        expect(buchung).toMatchObject({ source_type: "document", source_id: beleg.id });
+        const [audit] = await sql`select actor from audit_log where table_name = 'journal_entries' order by seq desc limit 1`;
+        expect(audit!.actor).toBe(`api:${(await mcp.listMcpTokens())[0]!.id}:Dokumentenarchiv`);
+
+        expect((await buchen(t, beleg.id)).status).toBe(422);
+        expect((await sql`select count(*)::int as n from journal_entries`)[0]!.n).toBe(1);
+        expect((await buchen(t, "00000000-0000-4000-8000-000000000000")).status).toBe(404);
+      });
+    });
   });
 });

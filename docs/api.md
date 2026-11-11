@@ -38,6 +38,7 @@ Es sind dieselben Tokens wie für die [KI-Assistenten](ki-assistenten.md); was e
 | `belege:lesen` | `GET /belege`, `GET /belege/{id}` |
 | `belege:anlegen` | dazu `POST /belege` |
 | `belege:auslesen` | `GET /belege`, `GET /belege/{id}` und `POST /belege/{id}/auslesung` |
+| `belege:buchen` | `GET /belege`, `GET /belege/{id}` und `POST /belege/{id}/buchung` |
 | `haben:lesen` | nur die Werkzeuge über [MCP](ki-assistenten.md), nicht die REST-API |
 
 Schreiben und anlegen schließen lesen ein. Ein Token ohne das nötige Recht bekommt `403`.
@@ -258,6 +259,19 @@ Die Werte gehen denselben Weg wie die einer KI-Auslesung:
 - Erneut senden ersetzt die Werte und verwirft eine Aufteilung auf mehrere Kategorien, wie **Mit KI neu auslesen**.
 
 Mit `422` abgelehnt wird, was Haben selbst besser weiß oder nicht mehr ändern darf: ein gebuchter Beleg, eine E-Rechnung (ihre Werte stehen in der Datei) und ein Beleg, dessen Auslesung gerade läuft.
+
+### Buchen über die API
+
+Ohne weiteres bucht kein Token: Belege bleiben „Zu prüfen“, bis du in Haben **Bestätigen und buchen** klickst. Soll ein Werkzeug oder KI-Assistent auch das übernehmen, gibst du seinem Token ausdrücklich das Recht `belege:buchen`. Es ist bei keinem neuen Token vorbelegt.
+
+```sh
+curl -s -X POST "$HABEN/belege/0c9a…/buchung" -H "Authorization: Bearer $TOKEN"
+```
+
+- Gebucht wird genau wie mit dem Knopf: dieselben Prüfungen, dieselbe Buchung, danach ist der Beleg festgeschrieben und lässt sich nur noch stornieren.
+- Fehlt noch etwas, antwortet die API mit `422` und nennt es; vorher zeigt `GET /belege/{id}` dasselbe unter `issues`. Ein schon gebuchter Beleg wird ebenfalls mit `422` abgelehnt, es entsteht nie eine zweite Buchung.
+- Im Änderungsprotokoll steht das Token als Akteur. So siehst du später, welche Buchung von einem Werkzeug kam.
+- Die Verantwortung für die Buchführung bleibt bei dir (GoBD). Vergib das Recht nur an ein Werkzeug, dessen Ergebnisse du kontrollierst, etwa mit einer regelmäßigen Durchsicht der gebuchten Belege. Ändern, Löschen, Stornieren, Voranmeldung und ELSTER bleiben in Haben.
 
 ### Paperless-ngx
 
