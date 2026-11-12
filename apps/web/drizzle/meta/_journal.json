@@ -1464,6 +1464,20 @@
       "when": 1794442598804,
       "tag": "0208_geschaeftsbereiche_laufend",
       "breakpoints": true
+    },
+    {
+      "idx": 209,
+      "version": "7",
+      "when": 1794444251512,
+      "tag": "0209_geschaeftsbereiche_klartext_ware",
+      "breakpoints": true
+    },
+    {
+      "idx": 210,
+      "version": "7",
+      "when": 1794444252597,
+      "tag": "0210_geschaeftsbereiche_klartext_trigger",
+      "breakpoints": true
     }
   ]
 }

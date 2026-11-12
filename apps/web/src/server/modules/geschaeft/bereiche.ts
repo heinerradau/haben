@@ -1,4 +1,4 @@
-import { BEREICH_REGEL_FELDER, BEREICH_ZWEIGE, type BereichRegel, type Geschaeftsbereich } from "@haben/core";
+import { BEREICH_REGEL_FELDER, BEREICH_ZWEIGE, type BereichRegel, type Geschaeftsbereich, type KontaktName } from "@haben/core";
 import { asc, eq, notInArray } from "drizzle-orm";
 import { z } from "zod";
 import { withActor } from "../../db/actor.ts";
@@ -31,6 +31,16 @@ const bereichSchema = z.object({
 /** Die ganze Liste, so wie sie gespeichert, gesichert und übertragen wird */
 export const bereichslisteSchema = z.object({
   bereiche: z.array(bereichSchema).max(100, "Höchstens 100 Bereiche."),
+  /** Klartext-Namen für Kontakte: Kontakt enthält Muster → Name; das erste passende Muster gilt */
+  namen: z
+    .array(
+      z.object({
+        muster: z.string().trim().min(1, "Ein Klartext-Name braucht ein Muster.").max(200),
+        name: z.string().trim().min(1, "Ein Klartext-Name braucht einen Namen.").max(80, "Ein Klartext-Name darf höchstens 80 Zeichen lang sein."),
+      }),
+    )
+    .max(500, "Höchstens 500 Klartext-Namen.")
+    .default([]),
 });
 
 export type Bereichsliste = z.output<typeof bereichslisteSchema>;
@@ -53,10 +63,20 @@ export async function ladeBereiche(): Promise<GeladeneBereiche> {
   };
 }
 
+/** Eigene Klartext-Namen für Kontakte, in der Reihenfolge der Liste */
+export async function ladeKontaktNamen(): Promise<KontaktName[]> {
+  const zeilen = await db
+    .select()
+    .from(schema.businessContactNames)
+    .orderBy(asc(schema.businessContactNames.position), asc(schema.businessContactNames.createdAt));
+  return zeilen.map((z) => ({ muster: z.muster, name: z.name }));
+}
+
 /** Die gespeicherte Liste in der Form von `bereichslisteSchema`, zum Sichern und Bearbeiten */
 export async function exportiereBereichsliste(): Promise<Bereichsliste> {
-  const { bereiche, regeln } = await ladeBereiche();
+  const [{ bereiche, regeln }, namen] = await Promise.all([ladeBereiche(), ladeKontaktNamen()]);
   return {
+    namen,
     bereiche: bereiche.map((b) => ({
       name: b.name,
       zweig: b.zweig,
@@ -107,6 +127,8 @@ export async function speichereBereichsliste(actor: string, input: Bereichsliste
         regeln += bereich.regeln.length;
       }
     }
+    await tx.delete(schema.businessContactNames);
+    if (liste.namen.length > 0) await tx.insert(schema.businessContactNames).values(liste.namen.map((n, position) => ({ ...n, position })));
     if (behalten.length > 0) await tx.delete(schema.businessAreas).where(notInArray(schema.businessAreas.id, behalten));
     else await tx.delete(schema.businessAreas);
     return { bereiche: behalten.length, regeln };

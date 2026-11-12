@@ -1,16 +1,18 @@
 import {
   bereichSummeGesamt,
   bereicheAuswerten,
+  klartextName,
   postenZuordnen,
   type BereichAuswertung,
   type BereichPosten,
   type BereichSumme,
   type Geschaeftsbereich,
+  type KontaktName,
   type ZugeordneterPosten,
 } from "@haben/core";
 import { asc, ne, sql } from "drizzle-orm";
 import { db, schema } from "../../db/index.ts";
-import { ladeBereiche, ladeZuordnungen } from "./bereiche.ts";
+import { ladeBereiche, ladeKontaktNamen, ladeZuordnungen } from "./bereiche.ts";
 
 /*
  * Auswertung nach Geschäftsbereichen über den archivierten Altbestand (lexoffice_vouchers): Nettobeträge nach
@@ -107,7 +109,7 @@ function monatDavor(monat: string, n: number): string {
  * Was regelmäßig abgeht: Ausgaben der Bereiche mit `laufend` in den zwölf vollen Monaten vor dem Monat des jüngsten
  * Belegs, je Kontakt. null ohne solche Bereiche oder ohne Belege.
  */
-function fixkosten(posten: readonly ZugeordneterPosten[], bereiche: readonly Geschaeftsbereich[]): Fixkosten | null {
+function fixkosten(posten: readonly ZugeordneterPosten[], bereiche: readonly Geschaeftsbereich[], namen: readonly KontaktName[]): Fixkosten | null {
   const laufend = new Set(bereiche.filter((b) => b.laufend).map((b) => b.id));
   const juengster =
     posten
@@ -121,8 +123,9 @@ function fixkosten(posten: readonly ZugeordneterPosten[], bereiche: readonly Ges
   for (const p of posten) {
     const monat = p.datum.slice(0, 7);
     if (p.richtung !== "ausgabe" || !p.bereichId || !laufend.has(p.bereichId) || monat < von || monat > bis) continue;
-    const key = `${p.bereichId}\u0000${p.kontakt}`;
-    const eintrag = jeKontakt.get(key) ?? { kontakt: p.kontakt, bereichId: p.bereichId, summe: 0, monate: new Set<string>() };
+    const name = klartextName(p.kontakt, namen);
+    const key = `${p.bereichId}\u0000${name}`;
+    const eintrag = jeKontakt.get(key) ?? { kontakt: name, bereichId: p.bereichId, summe: 0, monate: new Set<string>() };
     eintrag.summe += p.netto;
     eintrag.monate.add(monat);
     jeKontakt.set(key, eintrag);
@@ -142,26 +145,37 @@ export interface Kunde {
 /** So viele Kontakte je Zweig zeigt die Übersicht */
 const KUNDEN_MAX = 8;
 
-function groessteKunden(posten: readonly ZugeordneterPosten[], zweigVon: ReadonlyMap<string, string>, zweig: "eigenes" | "fremdes"): Kunde[] {
+function groessteKunden(
+  posten: readonly ZugeordneterPosten[],
+  zweigVon: ReadonlyMap<string, string>,
+  zweig: "eigenes" | "fremdes",
+  namen: readonly KontaktName[],
+): Kunde[] {
   const jeKontakt = new Map<string, Kunde>();
   for (const p of posten) {
     if (p.richtung !== "einnahme" || !p.bereichId || zweigVon.get(p.bereichId) !== zweig || !p.kontakt) continue;
-    const kunde = jeKontakt.get(p.kontakt) ?? { kontakt: p.kontakt, einnahmen: 0, posten: 0 };
-    jeKontakt.set(p.kontakt, { ...kunde, einnahmen: kunde.einnahmen + p.netto, posten: kunde.posten + 1 });
+    const name = klartextName(p.kontakt, namen);
+    const kunde = jeKontakt.get(name) ?? { kontakt: name, einnahmen: 0, posten: 0 };
+    jeKontakt.set(name, { ...kunde, einnahmen: kunde.einnahmen + p.netto, posten: kunde.posten + 1 });
   }
   return [...jeKontakt.values()].sort((a, b) => b.einnahmen - a.einnahmen || a.kontakt.localeCompare(b.kontakt, "de")).slice(0, KUNDEN_MAX);
 }
 
-async function zugeordnetePosten(): Promise<{ posten: ZugeordneterPosten[]; bereiche: Geschaeftsbereich[]; regelnJeBereich: Map<string, number> }> {
-  const [{ bereiche, regeln }, vonHand, posten] = await Promise.all([ladeBereiche(), ladeZuordnungen(), ladePosten()]);
+async function zugeordnetePosten(): Promise<{
+  posten: ZugeordneterPosten[];
+  bereiche: Geschaeftsbereich[];
+  regelnJeBereich: Map<string, number>;
+  namen: KontaktName[];
+}> {
+  const [{ bereiche, regeln }, vonHand, posten, namen] = await Promise.all([ladeBereiche(), ladeZuordnungen(), ladePosten(), ladeKontaktNamen()]);
   const regelnJeBereich = new Map<string, number>();
   for (const regel of regeln) regelnJeBereich.set(regel.bereichId, (regelnJeBereich.get(regel.bereichId) ?? 0) + 1);
-  return { posten: postenZuordnen(posten, bereiche, regeln, vonHand), bereiche, regelnJeBereich };
+  return { posten: postenZuordnen(posten, bereiche, regeln, vonHand), bereiche, regelnJeBereich, namen };
 }
 
 /** Summen je Jahr für alle Bereiche und Zweige */
 export async function geschaeftUebersicht(): Promise<GeschaeftUebersicht> {
-  const { posten, bereiche, regelnJeBereich } = await zugeordnetePosten();
+  const { posten, bereiche, regelnJeBereich, namen } = await zugeordnetePosten();
   const auswertung = bereicheAuswerten(posten, bereiche);
   const zweigVon = new Map(bereiche.map((b) => [b.id, b.zweig]));
   const quellen = { hand: 0, regel: 0, offen: 0 };
@@ -177,12 +191,24 @@ export async function geschaeftUebersicht(): Promise<GeschaeftUebersicht> {
     offenGesamt: bereichSummeGesamt(auswertung.offen),
     gesamt: auswertung.gesamt,
     quellen,
-    kunden: { eigenes: groessteKunden(posten, zweigVon, "eigenes"), fremdes: groessteKunden(posten, zweigVon, "fremdes") },
-    fixkosten: fixkosten(posten, bereiche),
+    kunden: { eigenes: groessteKunden(posten, zweigVon, "eigenes", namen), fremdes: groessteKunden(posten, zweigVon, "fremdes", namen) },
+    fixkosten: fixkosten(posten, bereiche, namen),
   };
 }
 
+/** Ein Kontakt eines Bereichs unter seinem Klartext-Namen */
+export interface BereichKontakt {
+  name: string;
+  einnahmen: number;
+  ausgaben: number;
+  posten: number;
+}
+
 export interface PostenListe {
+  /** Alle Posten zusammengefasst je Kontakt (Klartext-Name), die größten zuerst */
+  kontakte: BereichKontakt[];
+  /** Einnahmen und Ausgaben je Jahr, über alle Posten des Bereichs unabhängig vom gewählten Jahr */
+  jeJahr: Record<number, { einnahmen: number; ausgaben: number }>;
   posten: ZugeordneterPosten[];
   /** Mehr Posten als angezeigt */
   gekuerzt: boolean;
@@ -194,9 +220,18 @@ export interface PostenListe {
  * Dient zum Nachsehen, was hinter einer Zahl steht, und zum Zuordnen von Hand.
  */
 export async function geschaeftPosten(filter: { bereichId: string | null; jahr?: number }): Promise<PostenListe> {
-  const { posten } = await zugeordnetePosten();
-  const treffer = posten
-    .filter((p) => p.bereichId === filter.bereichId && (filter.jahr === undefined || Number(p.datum.slice(0, 4)) === filter.jahr))
+  const { posten, namen } = await zugeordnetePosten();
+  const imBereich = posten.filter((p) => p.bereichId === filter.bereichId);
+  const jeJahr: PostenListe["jeJahr"] = {};
+  for (const p of imBereich) {
+    const jahr = Number(p.datum.slice(0, 4));
+    const s = jeJahr[jahr] ?? { einnahmen: 0, ausgaben: 0 };
+    jeJahr[jahr] = s;
+    if (p.richtung === "einnahme") s.einnahmen += p.netto;
+    else s.ausgaben += p.netto;
+  }
+  const treffer = imBereich
+    .filter((p) => filter.jahr === undefined || Number(p.datum.slice(0, 4)) === filter.jahr)
     .sort((a, b) => Math.abs(b.netto) - Math.abs(a.netto) || a.datum.localeCompare(b.datum));
   const summe = treffer.reduce<BereichSumme>(
     (s, p) => {
@@ -206,5 +241,15 @@ export async function geschaeftPosten(filter: { bereichId: string | null; jahr?:
     },
     { einnahmen: 0, ausgaben: 0, ergebnis: 0, posten: 0 },
   );
-  return { posten: treffer.slice(0, LISTE_MAX), gekuerzt: treffer.length > LISTE_MAX, summe };
+  const jeKontakt = new Map<string, BereichKontakt>();
+  for (const p of treffer) {
+    const name = klartextName(p.kontakt, namen);
+    const k = jeKontakt.get(name) ?? { name, einnahmen: 0, ausgaben: 0, posten: 0 };
+    if (p.richtung === "einnahme") k.einnahmen += p.netto;
+    else k.ausgaben += p.netto;
+    k.posten += 1;
+    jeKontakt.set(name, k);
+  }
+  const kontakte = [...jeKontakt.values()].sort((a, b) => b.einnahmen + b.ausgaben - (a.einnahmen + a.ausgaben) || a.name.localeCompare(b.name, "de"));
+  return { kontakte, jeJahr, posten: treffer.slice(0, LISTE_MAX), gekuerzt: treffer.length > LISTE_MAX, summe };
 }

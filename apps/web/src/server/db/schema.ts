@@ -3387,6 +3387,16 @@ export const businessAreaAssignments = pgTable("business_area_assignments", {
   createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
 });
 
+/** Klartext-Name für Kontakte in der Auswertung „Geschäftsbereiche“: Kontakt enthält Muster → Name (etwa „Textilfabrik“) */
+export const businessContactNames = pgTable("business_contact_names", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  muster: text("muster").notNull(),
+  name: text("name").notNull(),
+  /** Reihenfolge der Liste; das erste passende Muster gilt */
+  position: integer("position").notNull().default(0),
+  createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+});
+
 /**
  * Warenbestand der Auswertung „Geschäftsbereiche“: was auf Lager liegt, was es gekostet hat und zu welchem Preis es
  * realistisch verkauft wird. Eine selbst gepflegte Schätzung, keine Inventur: frei änderbar, jede Änderung steht im
@@ -3400,6 +3410,10 @@ export const businessStockItems = pgTable("business_stock_items", {
   einkaufCent: integer("einkauf_cent").notNull(),
   /** Verkaufspreis je Stück (etwa der Händlerpreis), netto in Cent */
   preisCent: integer("preis_cent").notNull(),
+  /** Preis je Stück beim Verkauf direkt an Kunden, netto in Cent; 0 = wie preisCent */
+  ladenpreisCent: integer("ladenpreis_cent").notNull().default(0),
+  /** Schon verkaufte Stück */
+  verkauft: integer("verkauft").notNull().default(0),
   sortierung: integer("sortierung").notNull().default(0),
   createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
 });

@@ -1,5 +1,5 @@
-import { aufgelaufen, warenSumme } from "@haben/core";
-import type { GeladeneWaren, GeschaeftUebersicht, Kunde } from "../../server/modules/geschaeft/index.ts";
+import { aufgelaufen } from "@haben/core";
+import type { GeschaeftUebersicht, Kunde } from "../../server/modules/geschaeft/index.ts";
 import { euro } from "./euro.ts";
 
 /*
@@ -7,111 +7,74 @@ import { euro } from "./euro.ts";
  * Dazu, wer am meisten bezahlt hat, getrennt nach eigenem Geschäft und Arbeit für andere.
  */
 
-const W = 980;
-const H = 380;
-const LINKS = 64;
-const RECHTS = 210;
-const OBEN = 20;
-const UNTEN = 40;
-
-function Kennzahl({ titel, wert, hinweis }: { titel: string; wert: string; hinweis: string }) {
-  return (
-    <div>
-      <div className="kpi-label">{titel}</div>
-      <div className="kpi-value">{wert}</div>
-      <div className="small muted">{hinweis}</div>
-    </div>
-  );
-}
-
-export function MarkeCard({ uebersicht, waren }: { uebersicht: GeschaeftUebersicht; waren: GeladeneWaren }) {
-  const punkte = aufgelaufen(uebersicht.zweige.eigenes, uebersicht.jahre);
-  const ende = punkte.at(-1);
+export function MarkeCard({ uebersicht }: { uebersicht: GeschaeftUebersicht }) {
+  const jeJahr = uebersicht.zweige.eigenes;
+  const jahre = uebersicht.jahre.map((jahr) => ({ jahr, rein: Math.max(jeJahr[jahr]?.einnahmen ?? 0, 0), raus: Math.max(jeJahr[jahr]?.ausgaben ?? 0, 0) }));
+  const ende = aufgelaufen(jeJahr, uebersicht.jahre).at(-1);
   if (!ende || (ende.einnahmen === 0 && ende.ausgaben === 0)) return null;
-  const lager = warenSumme(waren.waren);
   const stand = ende.einnahmen - ende.ausgaben;
-  const max = Math.max(ende.einnahmen, ende.ausgaben, ...punkte.map((p) => Math.max(p.einnahmen, p.ausgaben))) * 1.08;
-  const x = (i: number) => LINKS + ((W - LINKS - RECHTS) * i) / Math.max(punkte.length - 1, 1);
-  const y = (cents: number) => H - UNTEN - (cents / max) * (H - OBEN - UNTEN);
-  const linie = (wert: (p: (typeof punkte)[number]) => number) => punkte.map((p, i) => `${i ? "L" : "M"}${x(i)},${y(wert(p))}`).join(" ");
-  const flaeche = `${linie((p) => p.einnahmen)} ${[...punkte]
-    .reverse()
-    .map((p, i) => `L${x(punkte.length - 1 - i)},${y(p.ausgaben)}`)
-    .join(" ")} Z`;
-  // Rund vier Hilfslinien auf glatten Beträgen
-  const schritt = [500_00, 1_000_00, 2_000_00, 5_000_00, 10_000_00, 20_000_00, 50_000_00, 100_000_00, 500_000_00].find((s) => max / s <= 5) ?? 1_000_000_00;
-  const linien = Array.from({ length: Math.floor(max / schritt) + 1 }, (_, i) => i * schritt);
-  const yEin = y(ende.einnahmen);
-  const yAus = y(ende.ausgaben);
-  const auseinander = Math.max(0, 44 - Math.abs(yAus - yEin)) / 2;
-  const oben = yEin <= yAus ? -1 : 1;
-
+  const gesamtMax = Math.max(ende.einnahmen, ende.ausgaben, 1);
+  const max = Math.max(1, ...jahre.map((j) => Math.max(j.rein, j.raus)));
   return (
     <section className="card stack geschaeft-fluss" aria-labelledby="marke-heading">
       <div>
-        <h2 id="marke-heading" style={{ margin: 0, fontSize: 16 }}>
+        <h2 id="marke-heading" className="bild-ueberschrift">
           Dein eigenes Geschäft: hineingesteckt und zurückbekommen
         </h2>
-        <p className="small muted" style={{ margin: "4px 0 0" }}>
-          Beide Linien zählen vom ersten Jahr an immer weiter hoch. Liegt die durchgezogene über der gestrichelten, hat das eigene Geschäft bis dahin mehr
-          gebracht als gekostet. Gemeinsame Kosten wie das Fahrzeug sind nicht eingerechnet.
+        <p className="fluss-satz">
+          {stand >= 0 ? (
+            <>
+              Dein eigenes Geschäft hat bisher <b>{euro(stand)}</b> mehr gebracht, als du hineingesteckt hast.
+            </>
+          ) : (
+            <>
+              In dein eigenes Geschäft hast du bisher <b>{euro(-stand)}</b> mehr gesteckt, als zurückkam.
+            </>
+          )}
         </p>
       </div>
-      <div className="grid-4">
-        <Kennzahl titel="Hineingesteckt" wert={euro(ende.ausgaben)} hinweis="Ware, Werkstatt, Werbung, Reisen" />
-        <Kennzahl titel="Zurückbekommen" wert={euro(ende.einnahmen)} hinweis="Verkäufe und eigene Projekte" />
-        <Kennzahl titel={stand >= 0 ? "Im Plus mit" : "Noch im Minus mit"} wert={euro(Math.abs(stand))} hinweis={`Stand ${ende.jahr}`} />
-        {lager.stueck > 0 && (
-          <Kennzahl
-            titel="Steckt noch in Ware"
-            wert={euro(lager.wert)}
-            hinweis={`${lager.stueck.toLocaleString("de-DE")} Stück, Einkauf ${euro(lager.einkauf)}`}
-          />
-        )}
+      <ol className="bild-balken bild-balken-gross">
+        <li>
+          <span className="bild-balken-name">Hineingesteckt</span>
+          <span className="bild-balken-spur">
+            <i className="marke-raus" style={{ width: `${(ende.ausgaben / gesamtMax) * 100}%` }} />
+          </span>
+          <span className="bild-balken-wert">{euro(ende.ausgaben)}</span>
+        </li>
+        <li>
+          <span className="bild-balken-name">Zurückbekommen</span>
+          <span className="bild-balken-spur">
+            <i style={{ width: `${(ende.einnahmen / gesamtMax) * 100}%`, background: "var(--zweig-eigenes)" }} />
+          </span>
+          <span className="bild-balken-wert">{euro(ende.einnahmen)}</span>
+        </li>
+      </ol>
+      <h3 className="bild-titel">So lief es in den einzelnen Jahren</h3>
+      <div className="marke-jahre">
+        {jahre.map((j) => (
+          <div key={j.jahr} className="marke-jahr">
+            <div className="marke-saeulen">
+              <span title={`${j.jahr} hineingesteckt: ${euro(j.raus)}`}>
+                <b>{j.raus > 0 ? euro(j.raus) : ""}</b>
+                <i className="marke-raus" style={{ height: `${(j.raus / max) * 100}%` }} />
+              </span>
+              <span title={`${j.jahr} zurückbekommen: ${euro(j.rein)}`}>
+                <b>{j.rein > 0 ? euro(j.rein) : ""}</b>
+                <i style={{ height: `${(j.rein / max) * 100}%`, background: "var(--zweig-eigenes)" }} />
+              </span>
+            </div>
+            <div className="jahre-name">{j.jahr}</div>
+            <div className={j.rein - j.raus >= 0 ? "jahre-rest" : "jahre-rest jahre-rest-minus"}>
+              {j.rein - j.raus >= 0 ? "+" : "−"}
+              {euro(Math.abs(j.rein - j.raus))}
+            </div>
+          </div>
+        ))}
       </div>
-      <div className="table-scroll">
-        <svg
-          viewBox={`0 0 ${W} ${H}`}
-          className="fluss-bild"
-          role="img"
-          aria-label={`Aufgelaufene Einnahmen und Ausgaben des eigenen Geschäfts von ${punkte[0]!.jahr} bis ${ende.jahr}; die Zahlen stehen in der Tabelle „Zweige je Jahr“`}
-        >
-          {linien.map((cents) => (
-            <g key={cents}>
-              <line x1={LINKS} x2={W - RECHTS} y1={y(cents)} y2={y(cents)} className="fluss-gitter" />
-              <text x={LINKS - 10} y={y(cents) + 4} style={{ textAnchor: "end" }} className="fluss-achse">
-                {cents === 0 ? "0 €" : `${(cents / 100_000).toLocaleString("de-DE")} Tsd.`}
-              </text>
-            </g>
-          ))}
-          <path d={flaeche} className="fluss-zwischen" />
-          <path d={linie((p) => p.ausgaben)} className="fluss-linie-aus" />
-          <path d={linie((p) => p.einnahmen)} className="fluss-linie-ein" />
-          {punkte.map((p, i) => (
-            <g key={p.jahr}>
-              <title>{`Bis Ende ${p.jahr}: zurückbekommen ${euro(p.einnahmen)}, hineingesteckt ${euro(p.ausgaben)}`}</title>
-              <rect x={x(i) - 36} y={OBEN} width={72} height={H - OBEN - UNTEN} fill="transparent" />
-              <circle cx={x(i)} cy={y(p.ausgaben)} r={5} className="fluss-punkt-aus" />
-              <circle cx={x(i)} cy={y(p.einnahmen)} r={5.5} className="fluss-punkt-ein" />
-              <text x={x(i)} y={H - 12} style={{ textAnchor: "middle" }} className="fluss-name">
-                {p.jahr}
-              </text>
-            </g>
-          ))}
-          <text x={W - RECHTS + 16} y={yEin + oben * auseinander + 5} className="fluss-name">
-            Zurückbekommen
-            <tspan dx={8} className="fluss-wert">
-              {euro(ende.einnahmen)}
-            </tspan>
-          </text>
-          <text x={W - RECHTS + 16} y={yAus - oben * auseinander + 5} className="fluss-name">
-            Hineingesteckt
-            <tspan dx={8} className="fluss-wert">
-              {euro(ende.ausgaben)}
-            </tspan>
-          </text>
-        </svg>
-      </div>
+      <p className="small muted" style={{ margin: 0 }}>
+        Grau: was du im Jahr für Ware, Werkstatt, Werbung und Reisen ausgegeben hast. Blau: was Verkäufe und eigene Projekte eingebracht haben. Gemeinsame
+        Kosten wie das Fahrzeug sind nicht eingerechnet.
+      </p>
     </section>
   );
 }
@@ -121,7 +84,7 @@ function Kundenliste({ titel, hinweis, kunden, farbe }: { titel: string; hinweis
   return (
     <section className="card stack geschaeft-fluss">
       <div>
-        <h2 style={{ margin: 0, fontSize: 16 }}>{titel}</h2>
+        <h2 className="bild-ueberschrift">{titel}</h2>
         <p className="small muted" style={{ margin: "4px 0 0" }}>
           {hinweis}
         </p>
@@ -131,14 +94,14 @@ function Kundenliste({ titel, hinweis, kunden, farbe }: { titel: string; hinweis
           Noch keine Einnahmen.
         </p>
       ) : (
-        <ol className="fluss-rang">
+        <ol className="bild-balken">
           {kunden.map((k) => (
             <li key={k.kontakt}>
-              <span>{k.kontakt}</span>
-              <span className="mono">{euro(k.einnahmen)}</span>
-              <div className="fluss-rang-spur">
-                <i style={{ width: `${Math.max((k.einnahmen / max) * 100, 1)}%`, background: farbe }} />
-              </div>
+              <span className="bild-balken-name">{k.kontakt}</span>
+              <span className="bild-balken-spur">
+                <i style={{ width: `${Math.max((k.einnahmen / max) * 100, 1.5)}%`, background: farbe }} />
+              </span>
+              <span className="bild-balken-wert">{euro(k.einnahmen)}</span>
             </li>
           ))}
         </ol>

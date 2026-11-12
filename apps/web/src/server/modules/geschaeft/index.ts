@@ -8,6 +8,7 @@
 export {
   bereichslisteSchema,
   exportiereBereichsliste,
+  ladeKontaktNamen,
   GeschaeftsbereichError,
   ladeBereiche,
   ordneBelegZu,
@@ -20,6 +21,7 @@ export {
   geschaeftPosten,
   geschaeftUebersicht,
   ladePosten,
+  type BereichKontakt,
   type BereichZeile,
   type Fixkosten,
   type GeschaeftUebersicht,

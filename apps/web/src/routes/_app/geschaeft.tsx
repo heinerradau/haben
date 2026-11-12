@@ -1,10 +1,12 @@
-import { BEREICH_ZWEIG_LABEL, BEREICH_ZWEIGE, bereichSummeGesamt, formatEuro, type BereichSumme, type BereichZweig } from "@haben/core";
+import { BEREICH_ZWEIG_LABEL, BEREICH_ZWEIGE, bereichSummeGesamt, formatEuro, type BereichSumme } from "@haben/core";
 import { Link, createFileRoute, useRouter } from "@tanstack/react-router";
 import { useServerFn } from "@tanstack/react-start";
 import { z } from "zod/mini";
+import { BereichCard } from "../../components/geschaeft/BereichCard.tsx";
 import { BereichslisteCard } from "../../components/geschaeft/BereichslisteCard.tsx";
 import { FixkostenCard } from "../../components/geschaeft/FixkostenCard.tsx";
 import { GeldflussCard } from "../../components/geschaeft/GeldflussCard.tsx";
+import { JahreCard } from "../../components/geschaeft/JahreCard.tsx";
 import { KundenCards, MarkeCard } from "../../components/geschaeft/MarkeCard.tsx";
 import { PostenCard } from "../../components/geschaeft/PostenCard.tsx";
 import { WarenCard } from "../../components/geschaeft/WarenCard.tsx";
@@ -37,23 +39,8 @@ type Uebersicht = Data["uebersicht"];
 
 const LEER: BereichSumme = { einnahmen: 0, ausgaben: 0, ergebnis: 0, posten: 0 };
 
-/** Zweige, die in die Rechnung „trägt sich das?“ eingehen; „neutral“ steht nur der Vollständigkeit halber in der Tabelle */
-const GEWERTET: BereichZweig[] = ["fremdes", "eigenes", "gemeinsam"];
-
 function ergebnisFarbe(cents: number): string | undefined {
   return cents < 0 ? "var(--danger-ink)" : undefined;
-}
-
-function Kennzahl({ titel, summe, hinweis }: { titel: string; summe: BereichSumme; hinweis: string }) {
-  return (
-    <div className="card">
-      <div className="kpi-label">{titel}</div>
-      <div className="kpi-value" style={{ color: ergebnisFarbe(summe.ergebnis) }}>
-        {formatEuro(summe.ergebnis)}
-      </div>
-      <div className="small muted">{hinweis}</div>
-    </div>
-  );
 }
 
 function ZweigTabelle({ uebersicht }: { uebersicht: Uebersicht }) {
@@ -115,47 +102,6 @@ function ZweigTabelle({ uebersicht }: { uebersicht: Uebersicht }) {
             </tr>
           </tfoot>
         </ScrollTable>
-      </div>
-    </section>
-  );
-}
-
-/** Je Jahr drei Balken: was die Arbeit für andere übrig lässt, was das eigene Geschäft bringt oder kostet, was der Betrieb kostet */
-function JahresBalken({ uebersicht }: { uebersicht: Uebersicht }) {
-  const { jahre, zweige } = uebersicht;
-  const wert = (zweig: BereichZweig, jahr: number) => zweige[zweig][jahr]?.ergebnis ?? 0;
-  const max = Math.max(1, ...jahre.flatMap((jahr) => GEWERTET.map((zweig) => Math.abs(wert(zweig, jahr)))));
-  return (
-    <section className="card" aria-labelledby="balken-heading">
-      <h2 id="balken-heading" style={{ margin: 0, fontSize: 16 }}>
-        Trägt sich das?
-      </h2>
-      <p className="small muted" style={{ margin: "4px 0 12px" }}>
-        Ergebnis je Zweig und Jahr. Nach rechts: bringt Geld. Nach links: kostet Geld.
-      </p>
-      <div className="geschaeft-balken" role="img" aria-label="Balkendiagramm: Ergebnis je Zweig und Jahr; die Zahlen stehen in der Tabelle darunter">
-        {jahre.map((jahr) => (
-          <div key={jahr} className="geschaeft-balken-jahr">
-            <div className="geschaeft-balken-label">{jahr}</div>
-            <div className="geschaeft-balken-reihen">
-              {GEWERTET.map((zweig) => {
-                const cents = wert(zweig, jahr);
-                const breite = `${(Math.abs(cents) / max) * 50}%`;
-                return (
-                  <div key={zweig} className="geschaeft-balken-reihe">
-                    <span className="small muted">{BEREICH_ZWEIG_LABEL[zweig]}</span>
-                    <div className="geschaeft-balken-spur">
-                      <div className={cents < 0 ? "geschaeft-balken-minus" : "geschaeft-balken-plus"} style={{ width: breite }} />
-                    </div>
-                    <span className="num" style={{ color: ergebnisFarbe(cents) }}>
-                      {formatEuro(cents)}
-                    </span>
-                  </div>
-                );
-              })}
-            </div>
-          </div>
-        ))}
       </div>
     </section>
   );
@@ -261,8 +207,6 @@ function GeschaeftPage() {
   const assign = useServerFn(assignBeleg);
   const { busy, notice, run } = useAction();
   const leer = uebersicht.zeilen.length === 0;
-  const summen = Object.fromEntries(GEWERTET.map((z) => [z, bereichSummeGesamt(uebersicht.zweige[z])])) as Record<BereichZweig, BereichSumme>;
-  const zeitraum = uebersicht.jahre.length > 0 ? `${uebersicht.jahre[0]} bis ${uebersicht.jahre.at(-1)}` : "";
   const gewaehlterName = bereich === "offen" ? "Noch nicht zugeordnet" : uebersicht.zeilen.find((z) => z.bereich.id === bereich)?.bereich.name;
 
   const zuordnen = (belegId: string, bereichId: string | null) =>
@@ -290,7 +234,7 @@ function GeschaeftPage() {
           <p style={{ margin: 0 }}>
             Geschäftsbereiche teilen deine Belege danach auf, wozu sie gehören: etwa „Auftragsarbeit“ und „Kurse“ als Arbeit für andere, „Online-Shop“ und
             „Ware“ als eigenes Geschäft, „Fahrzeug“ als gemeinsame Kosten. Regeln ordnen die Belege zu, zum Beispiel „Kontakt enthält Theater“. Lege unten die
-            Liste an; danach zeigt diese Seite je Jahr, welcher Bereich sich trägt.
+            Liste an; danach zeigt diese Seite, woher dein Geld kommt und wohin es geht.
           </p>
         </section>
       ) : (
@@ -298,39 +242,38 @@ function GeschaeftPage() {
       )}
 
       {posten && gewaehlterName && (
-        <PostenCard
-          titel={`${gewaehlterName}${jahr ? ` ${jahr}` : ""}`}
+        <BereichCard
+          bereich={uebersicht.zeilen.find((z) => z.bereich.id === bereich)?.bereich ?? null}
+          titel={gewaehlterName}
+          jahre={uebersicht.jahre}
+          jahr={jahr}
+          fluss={fluss}
           liste={posten}
-          bereiche={uebersicht.zeilen.map((z) => z.bereich)}
-          busy={busy}
-          onAssign={zuordnen}
-        />
+        >
+          <PostenCard
+            titel={`${gewaehlterName}${jahr ? ` ${jahr}` : ""}`}
+            liste={posten}
+            bereiche={uebersicht.zeilen.map((z) => z.bereich)}
+            busy={busy}
+            onAssign={zuordnen}
+          />
+        </BereichCard>
       )}
 
       {!leer && (
         <>
+          <JahreCard uebersicht={uebersicht} fluss={fluss} />
           <FixkostenCard uebersicht={uebersicht} />
-          <MarkeCard uebersicht={uebersicht} waren={waren} />
-          <KundenCards uebersicht={uebersicht} />
+          <MarkeCard uebersicht={uebersicht} />
           <WarenCard key={waren.stand ?? "leer"} bestand={waren} />
+          <KundenCards uebersicht={uebersicht} />
         </>
       )}
 
       {!leer && (
         <details className="geschaeft-zahlen">
-          <summary>Alle Zahlen als Tabellen</summary>
+          <summary>Zahlen zum Nachschlagen (Tabellen)</summary>
           <div className="stack-lg">
-            <div className="grid-4">
-              <Kennzahl titel={`Fremdes ${zeitraum}`} summe={summen.fremdes} hinweis="Arbeit für andere: Einnahmen minus direkte Kosten" />
-              <Kennzahl titel={`Eigenes ${zeitraum}`} summe={summen.eigenes} hinweis="Das eigene Geschäft: Verkäufe minus Ware, Werbung, Reisen" />
-              <Kennzahl titel={`Gemeinsame Kosten ${zeitraum}`} summe={summen.gemeinsam} hinweis="Was beide Zweige brauchen: Fahrzeug, Büro, Telefon" />
-              <Kennzahl
-                titel={`Zusammen ${zeitraum}`}
-                summe={bereichSummeGesamt(uebersicht.gesamt)}
-                hinweis={`${uebersicht.quellen.regel + uebersicht.quellen.hand} Posten zugeordnet, ${uebersicht.quellen.offen} offen`}
-              />
-            </div>
-            <JahresBalken uebersicht={uebersicht} />
             <ZweigTabelle uebersicht={uebersicht} />
             <BereichTabelle uebersicht={uebersicht} gewaehlt={bereich} jahr={jahr} />
           </div>

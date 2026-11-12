@@ -18,6 +18,13 @@ const wareSchema = z.object({
   stueck: z.number().int("Die Stückzahl ist eine ganze Zahl.").min(0, "Die Stückzahl darf nicht negativ sein.").max(10_000_000),
   einkaufCent: preis("Der Einkaufspreis"),
   preisCent: preis("Der Verkaufspreis"),
+  ladenpreisCent: preis("Der Ladenpreis").optional(),
+  verkauft: z
+    .number()
+    .int("Die verkaufte Stückzahl ist eine ganze Zahl.")
+    .min(0, "Die verkaufte Stückzahl darf nicht negativ sein.")
+    .max(10_000_000)
+    .optional(),
 });
 
 /** Die ganze Liste, so wie sie gespeichert, gesichert und übertragen wird */
@@ -36,7 +43,14 @@ export interface GeladeneWaren {
 export async function ladeWaren(): Promise<GeladeneWaren> {
   const zeilen = await db.select().from(schema.businessStockItems).orderBy(asc(schema.businessStockItems.sortierung), asc(schema.businessStockItems.name));
   return {
-    waren: zeilen.map((z) => ({ name: z.name, stueck: z.stueck, einkaufCent: z.einkaufCent, preisCent: z.preisCent })),
+    waren: zeilen.map((z) => ({
+      name: z.name,
+      stueck: z.stueck,
+      einkaufCent: z.einkaufCent,
+      preisCent: z.preisCent,
+      ...(z.ladenpreisCent > 0 ? { ladenpreisCent: z.ladenpreisCent } : {}),
+      ...(z.verkauft > 0 ? { verkauft: z.verkauft } : {}),
+    })),
     stand: zeilen.length > 0 ? new Date(Math.max(...zeilen.map((z) => z.createdAt.getTime()))).toISOString() : null,
   };
 }

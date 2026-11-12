@@ -220,3 +220,73 @@
 .geschaeft-zahlen[open] > summary { margin-bottom: 16px; }
 .geschaeft-zahlen > .stack-lg { display: flex; flex-direction: column; gap: 16px; }
 .fix-kopf { display: flex; justify-content: space-between; gap: 12px; flex-wrap: wrap; font-weight: 600; border-bottom: 1px solid var(--line); padding-bottom: 6px; }
+
+/* Geschäftsbereiche als Bilder: Überschriften, Balkenlisten, Säulen je Jahr, Kacheln, Füllbalken der Ware */
+.geschaeft-fluss { --bunt-1: #2a78d6; --bunt-2: #eb6834; --bunt-3: #1baf7a; --bunt-4: #eda100; --bunt-5: #e87ba4; --bunt-6: #008300; --bunt-7: #6250d6; --bunt-8: #e34948; --marke-raus: #9aa1ad; }
+[data-theme="nacht"] .geschaeft-fluss, [data-theme="tiefsee"] .geschaeft-fluss { --bunt-1: #3987e5; --bunt-2: #d95926; --bunt-3: #199e70; --bunt-4: #c98500; --bunt-5: #d55181; --bunt-6: #008300; --bunt-7: #9085e9; --bunt-8: #e66767; --marke-raus: #6f7682; }
+.bild-ueberschrift { margin: 0; font-size: 18px; }
+.bild-titel { margin: 0; font-size: 15px; font-weight: 600; }
+.bild-kopf { display: flex; justify-content: space-between; align-items: flex-start; gap: 12px; flex-wrap: wrap; }
+.bild-kopf .fluss-satz { margin-top: 6px; }
+.geschaeft-fluss .fluss-satz { margin-top: 6px; }
+.bild-balken { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 10px; }
+.bild-balken li { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 4px 12px; align-items: baseline; }
+.bild-balken-name { font-size: 14px; overflow-wrap: anywhere; }
+.bild-balken-wert { font-size: 14px; font-weight: 600; font-variant-numeric: tabular-nums; }
+.bild-balken-spur { grid-column: 1 / -1; grid-row: 2; height: 16px; border-radius: 5px; background: var(--line-soft); overflow: hidden; }
+.bild-balken-spur i { display: block; height: 100%; border-radius: 5px; }
+.bild-balken-gross .bild-balken-spur { height: 30px; border-radius: 8px; }
+.bild-balken-gross .bild-balken-spur i { border-radius: 8px; }
+.bild-balken-gross .bild-balken-name, .bild-balken-gross .bild-balken-wert { font-size: 16px; }
+.marke-raus { background: var(--marke-raus); }
+.bild-jahre, .jahre-reihe, .marke-jahre { display: grid; grid-auto-flow: column; grid-auto-columns: minmax(64px, 1fr); gap: 8px; overflow-x: auto; }
+.bild-jahr { display: flex; flex-direction: column; align-items: center; gap: 4px; padding: 8px 4px; border-radius: 10px; text-decoration: none; color: var(--ink); border: 1px solid transparent; }
+.bild-jahr:hover { background: var(--accent-tint); }
+.bild-jahr-aktiv { border-color: var(--ink); background: var(--line-soft); }
+.bild-jahr-wert { font-size: 13px; font-weight: 600; min-height: 18px; font-variant-numeric: tabular-nums; }
+.bild-jahr-saeule { height: 120px; width: 70%; max-width: 64px; display: flex; align-items: flex-end; border-bottom: 2px solid var(--line-strong); }
+.bild-jahr-saeule i { display: block; width: 100%; border-radius: 5px 5px 0 0; }
+.bild-jahr-name, .jahre-name { font-size: 14px; font-weight: 600; text-align: center; }
+.bild-belege > summary { cursor: pointer; font-weight: 600; }
+.bild-belege > .card { margin-top: 12px; border: 0; padding: 0; box-shadow: none; }
+.jahre-jahr { display: flex; flex-direction: column; align-items: center; padding: 8px 4px; border-radius: 10px; text-decoration: none; color: var(--ink); border: 1px solid transparent; }
+.jahre-jahr:hover { background: var(--accent-tint); }
+.jahre-jahr-aktiv { border-color: var(--ink); background: var(--line-soft); }
+.jahre-oben, .jahre-unten { display: flex; flex-direction: column; align-items: center; width: 70%; max-width: 72px; }
+.jahre-oben { justify-content: flex-end; border-bottom: 2px solid var(--line-strong); padding-top: 20px; box-sizing: content-box; }
+.jahre-unten { justify-content: flex-start; padding-bottom: 20px; box-sizing: content-box; }
+.jahre-oben i, .jahre-unten i { display: block; width: 100%; flex: none; }
+.jahre-oben i:first-of-type { border-radius: 5px 5px 0 0; }
+.jahre-unten i:last-of-type { border-radius: 0 0 5px 5px; }
+.jahre-oben i + i, .jahre-unten i + i { box-shadow: 0 -2px 0 var(--surface); }
+.jahre-raus-eigenes { opacity: 0.55; }
+.jahre-zahl { font-size: 12px; color: var(--muted); font-variant-numeric: tabular-nums; white-space: nowrap; line-height: 18px; }
+.jahre-rest { font-size: 14px; font-weight: 700; font-variant-numeric: tabular-nums; text-align: center; white-space: nowrap; }
+.jahre-rest-minus { color: var(--danger-ink); }
+.marke-jahr { display: flex; flex-direction: column; align-items: center; gap: 2px; }
+.marke-saeulen { display: flex; align-items: flex-end; justify-content: center; gap: 4px; height: 170px; width: 100%; border-bottom: 2px solid var(--line-strong); }
+.marke-saeulen span { display: flex; flex-direction: column; justify-content: flex-end; align-items: center; height: 100%; width: 42%; max-width: 44px; }
+.marke-saeulen b { font-size: 11px; font-weight: 500; color: var(--muted); white-space: nowrap; font-variant-numeric: tabular-nums; }
+.marke-saeulen i { display: block; width: 100%; border-radius: 4px 4px 0 0; flex: none; }
+.fix-kacheln { display: flex; flex-wrap: wrap; gap: 6px; }
+.fix-kachel { flex-basis: 150px; min-width: 0; display: flex; flex-direction: column; gap: 2px; padding: 12px 14px; border-radius: 10px; border-left: 6px solid var(--kachel); background: color-mix(in srgb, var(--kachel) 16%, var(--surface)); }
+.fix-kachel-name { font-size: 14px; font-weight: 600; overflow-wrap: anywhere; }
+.fix-kachel-wert { font-size: 22px; font-weight: 700; font-variant-numeric: tabular-nums; }
+.fix-kachel-hinweis { font-size: 12px; color: var(--muted); }
+.bunt-1 { --kachel: var(--bunt-1); } .bunt-2 { --kachel: var(--bunt-2); } .bunt-3 { --kachel: var(--bunt-3); } .bunt-4 { --kachel: var(--bunt-4); }
+.bunt-5 { --kachel: var(--bunt-5); } .bunt-6 { --kachel: var(--bunt-6); } .bunt-7 { --kachel: var(--bunt-7); } .bunt-8 { --kachel: var(--bunt-8); }
+.ware-gesamt { height: 34px; display: flex; }
+.ware-wert { position: relative; display: block; height: 100%; min-width: 4px; }
+.ware-wert i { position: absolute; left: 0; top: 0; bottom: 0; border-radius: 6px; }
+.ware-direkt { background: var(--zweig-eigenes-soft); }
+.ware-haendler { background: var(--zweig-eigenes); }
+.ware-einkauf { background: var(--ink); }
+.fluss-legende i.ware-direkt, .fluss-legende i.ware-haendler, .fluss-legende i.ware-einkauf { position: static; }
+.ware-liste { display: grid; grid-template-columns: repeat(auto-fit, minmax(320px, 1fr)); gap: 18px 28px; }
+.ware-posten { display: flex; flex-direction: column; gap: 6px; }
+.ware-name { font-weight: 600; }
+.ware-zeile { display: flex; flex-direction: column; gap: 3px; }
+.ware-fuell { display: block; height: 16px; border-radius: 8px; background: var(--line-soft); overflow: hidden; border: 1px solid var(--line-strong); }
+.ware-fuell i { display: block; height: 100%; background: var(--bunt-3); }
+.ware-spur { display: block; height: 16px; }
+.ware-text { font-size: 13px; color: var(--ink-2); }

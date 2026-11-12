@@ -117,7 +117,7 @@ export function GeldflussCard({ uebersicht, jahr }: { uebersicht: GeschaeftUeber
           key={q.key}
           to="/geschaeft"
           search={{ bereich: q.bereichId, jahr, fluss: jahr }}
-          hash="posten-heading"
+          hash="bereich-heading"
           className="fluss-knoten"
           aria-label={`${titel}. Belege anzeigen`}
         >
@@ -177,7 +177,8 @@ export function GeldflussCard({ uebersicht, jahr }: { uebersicht: GeschaeftUeber
           >
             {seite(links, true)}
             {seite(rechts, false)}
-            <rect x={topfX} y={topfY} width={TOPF} height={Math.max(ausH - (restH > 0 ? 2 : 0), 0)} rx={6} className="fluss-topf-aus" />
+            {/* Ein Topf aus einem Guss: oben was ausgegeben wurde, unten ohne Lücke und gleich breit, was übrig blieb */}
+            <rect x={topfX} y={topfY} width={TOPF} height={topfH} rx={8} className="fluss-topf-aus" />
             {ausH >= 40 && (
               <text x={BREITE / 2} y={topfY + ausH / 2 - 3} style={{ textAnchor: "middle" }} className="fluss-topf-text">
                 Ausgegeben
@@ -188,9 +189,9 @@ export function GeldflussCard({ uebersicht, jahr }: { uebersicht: GeschaeftUeber
             )}
             {restH > 0 && (
               <>
-                <rect x={topfX - 8} y={topfY + ausH} width={TOPF + 16} height={restH} rx={6} className="fluss-topf-rest">
+                <path d={`M${topfX},${topfY + ausH} h${TOPF} v${restH - 8} a8,8 0 0 1 -8,8 h${-(TOPF - 16)} a8,8 0 0 1 -8,-8 Z`} className="fluss-topf-rest">
                   <title>{`Bleibt übrig: ${euro(fluss.rest)}, ${prozent(fluss.rest, fluss.einnahmen)} der Einnahmen`}</title>
-                </rect>
+                </path>
                 {restH >= 58 ? (
                   <text x={BREITE / 2} y={topfY + ausH + restH / 2 - 12} style={{ textAnchor: "middle" }} className="fluss-rest-text">
                     Bleibt übrig
