@@ -133,11 +133,11 @@ export function GeldflussCard({ uebersicht, jahr }: { uebersicht: GeschaeftUeber
   return (
     <section className="card stack geschaeft-fluss" aria-labelledby="fluss-heading">
       <nav className="fluss-jahre" aria-label="Zeitraum">
-        <Link to="/geschaeft" search={{}} className="fluss-chip" aria-current={jahr === undefined ? "true" : undefined}>
+        <Link to="/geschaeft" search={{}} className={jahr === undefined ? "fluss-chip fluss-chip-aktiv" : "fluss-chip"}>
           Alle Jahre
         </Link>
         {uebersicht.jahre.map((j) => (
-          <Link key={j} to="/geschaeft" search={{ fluss: j }} className="fluss-chip" aria-current={jahr === j ? "true" : undefined}>
+          <Link key={j} to="/geschaeft" search={{ fluss: j }} className={jahr === j ? "fluss-chip fluss-chip-aktiv" : "fluss-chip"}>
             {j}
           </Link>
         ))}

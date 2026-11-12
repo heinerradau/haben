@@ -184,7 +184,7 @@
 .fluss-jahre { display: flex; flex-wrap: wrap; gap: 8px; }
 .fluss-chip { border: 1px solid var(--line-strong); border-radius: 999px; padding: 4px 14px; font-size: 14px; color: var(--ink); text-decoration: none; }
 .fluss-chip:hover { background: var(--accent-tint); }
-.fluss-chip[aria-current="true"] { background: var(--ink); border-color: var(--ink); color: var(--surface); }
+.fluss-chip-aktiv, .fluss-chip-aktiv:hover { background: var(--ink); border-color: var(--ink); color: var(--surface); }
 .fluss-satz { margin: 0; font-size: clamp(18px, 2.4vw, 24px); line-height: 1.35; max-width: 36em; text-wrap: balance; }
 .fluss-satz b { white-space: nowrap; }
 .fluss-legende { display: flex; flex-wrap: wrap; gap: 4px 18px; }
