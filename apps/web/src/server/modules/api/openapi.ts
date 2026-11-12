@@ -123,6 +123,7 @@ function buildDocument() {
       { name: "Rechnungen", description: "Alle Rechnungen lesen, Entwürfe anlegen, ändern und löschen" },
       { name: "Belege", description: "Eingangsbelege hochladen und ihren Stand lesen; geprüft und gebucht wird in Haben" },
       { name: "Bank", description: "Konten und Umsätze lesen; mit eigenem Recht Umsätze zuordnen" },
+      { name: "Geschäft", description: "Die Auswertung „Mein Geschäft“ lesen: Bereiche, Zweige, laufende Kosten, Warenbestand" },
     ],
     paths,
     components: {
@@ -131,9 +132,7 @@ function buildDocument() {
         token: {
           type: "http",
           scheme: "bearer",
-          description: `API-Token aus Haben (hb_…). Rechte: ${TOKEN_SCOPES.filter((s) => s !== "haben:lesen")
-            .map((s) => `${s} (${TOKEN_SCOPE_LABELS[s]})`)
-            .join(", ")}.`,
+          description: `API-Token aus Haben (hb_…). Rechte: ${TOKEN_SCOPES.map((s) => `${s} (${TOKEN_SCOPE_LABELS[s]})`).join(", ")}.`,
         },
       },
     },

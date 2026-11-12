@@ -4,6 +4,7 @@ import type { TokenScope } from "../mcp/index.ts";
 import { createContactHandler, getContactHandler, listContactsHandler, updateContactHandler } from "./contacts.ts";
 import type { Handler } from "./http.ts";
 import { BANK_ROUTES } from "./bank.ts";
+import { GESCHAEFT_ROUTES } from "./geschaeft.ts";
 import {
   bookDocumentHandler,
   cancelDocumentHandler,
@@ -32,7 +33,7 @@ export interface ApiRoute {
   scope: TokenScope;
   summary: string;
   description?: string;
-  tag: "Kontakte" | "Rechnungen" | "Belege" | "Bank";
+  tag: "Kontakte" | "Rechnungen" | "Belege" | "Bank" | "Geschäft";
   query?: z.ZodObject;
   /** Name in requestSchemas */
   requestBody?: string;
@@ -273,4 +274,5 @@ export const API_ROUTES: ApiRoute[] = [
     handler: reenterDocumentHandler,
   },
   ...BANK_ROUTES,
+  ...GESCHAEFT_ROUTES,
 ];

@@ -42,7 +42,7 @@ Es sind dieselben Tokens wie für die [KI-Assistenten](ki-assistenten.md); was e
 | `belege:buchen` | `GET /belege`, `GET /belege/{id}`, `POST /belege/{id}/buchung` und `POST /belege/{id}/storno` |
 | `bank:lesen` | `GET /bank/konten`, `GET /bank/umsaetze`, `GET /bank/umsaetze/{id}` |
 | `bank:zuordnen` | dazu `POST /bank/umsaetze/{id}/zuordnung` |
-| `haben:lesen` | nur die Werkzeuge über [MCP](ki-assistenten.md), nicht die REST-API |
+| `haben:lesen` | die Werkzeuge über [MCP](ki-assistenten.md) und in der REST-API nur `GET /geschaeft`, `GET /geschaeft/bereiche/{id}` |
 
 Schreiben und anlegen schließen lesen ein. Ein Token ohne das nötige Recht bekommt `403`.
 
@@ -344,3 +344,16 @@ Paperless-ngx schickt neue Dokumente mit einem Workflow ohne eigenen Code an Hab
 - Im SSO-Modus hat jedes Token einen verantwortlichen Inhaber; verliert er die Inhaberrolle, deaktiviert Haben seine Tokens, siehe [Tokens nach Gruppenentzug](installation.md#tokens-nach-gruppenentzug).
 
 [Zurück zur Übersicht](ueberblick.md)
+
+## Mein Geschäft
+
+Mit `haben:lesen` liest ein Werkzeug die Auswertung der Seite [Mein Geschäft](geschaeftsbereiche.md), etwa für ein eigenes Cockpit. Ändern lässt sich darüber nichts, einzelne Belege stehen nicht darin.
+
+```sh
+curl -s "$HABEN/geschaeft" -H "Authorization: Bearer $TOKEN"
+```
+
+- `bereiche`, `zweige` (`eigenes`, `fremdes`, `gemeinsam`) und `gesamt` nennen je Jahr und über alle Jahre Einnahmen, Ausgaben, Ergebnis und die Zahl der Posten, netto in Cent nach Belegdatum. `gesamt.gesamt.ergebnis` ist der Gewinn vor Steuern.
+- `laufendeKosten` sind die Abos und Verträge der letzten zwölf vollen Monate: `monatlich` ist, was zurzeit im Monat abgeht (brutto), `posten` die Anbieter unter ihrem Klartext-Namen.
+- `waren` ist der Warenbestand: je Ware und in `summe` die Stückzahl, der Einkauf und der Wert zum Händlerpreis (`wert`) und beim Verkauf direkt an Kunden (`wertDirekt`).
+- `GET /geschaeft/bereiche/{id}` nennt die Kontakte hinter einem Bereich, die größten zuerst; mit `?jahr=2025` nur eines Jahres.

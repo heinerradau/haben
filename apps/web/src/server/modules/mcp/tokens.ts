@@ -20,7 +20,8 @@ import { loadCompany } from "../stammdaten/index.ts";
 export class McpError extends UserError {}
 
 /**
- * Rechte eines Tokens. haben:lesen gilt für die Werkzeuge über MCP, die übrigen für die REST-API. Kein Recht versendet
+ * Rechte eines Tokens. haben:lesen gilt für die Werkzeuge über MCP und für die Auswertung „Mein Geschäft“ der REST-API
+ * (GET /geschaeft), die übrigen für die REST-API. Kein Recht versendet
  * oder meldet ans Finanzamt, und nur belege:buchen schreibt fest: Es bucht einen fertig geprüften Eingangsbeleg genau so,
  * wie der Knopf „Bestätigen und buchen“ es täte, und storniert ihn wie der Knopf „Stornieren“ (Gegenbuchung, nichts
  * wird gelöscht). belege:aendern ändert nur Belege, die noch „Zu prüfen“ sind. Beide Rechte sind nie vorbelegt; wer sie
@@ -44,7 +45,7 @@ export type TokenScope = (typeof TOKEN_SCOPES)[number];
 
 /** Beschreibung je Recht für Einstellungen und OpenAPI */
 export const TOKEN_SCOPE_LABELS: Record<TokenScope, string> = {
-  "haben:lesen": "KI-Assistent (MCP): Buchhaltung lesen",
+  "haben:lesen": "KI-Assistent (MCP): Buchhaltung lesen; API: Auswertung „Mein Geschäft“ lesen",
   "kontakte:lesen": "API: Kontakte lesen",
   "kontakte:schreiben": "API: Kontakte lesen, anlegen und ändern",
   "rechnungen:lesen": "API: Rechnungen und Entwürfe lesen",
