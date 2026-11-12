@@ -23,6 +23,8 @@ const regelSchema = z.object({
 const bereichSchema = z.object({
   name: z.string().trim().min(1, "Ein Bereich braucht einen Namen.").max(60, "Der Name eines Bereichs darf höchstens 60 Zeichen lang sein."),
   zweig: z.enum(BEREICH_ZWEIGE, { error: "Zweig ist „eigenes“, „fremdes“, „gemeinsam“ oder „neutral“." }),
+  /** Laufende Kosten, etwa Abos, Internet oder Versicherungen */
+  laufend: z.boolean({ error: "„laufend“ ist true oder false." }).optional(),
   regeln: z.array(regelSchema).max(500, "Höchstens 500 Regeln je Bereich.").default([]),
 });
 
@@ -46,7 +48,7 @@ export async function ladeBereiche(): Promise<GeladeneBereiche> {
     db.select().from(schema.businessAreaRules).orderBy(asc(schema.businessAreaRules.position), asc(schema.businessAreaRules.createdAt)),
   ]);
   return {
-    bereiche: bereiche.map((b) => ({ id: b.id, name: b.name, zweig: b.zweig, sortierung: b.sortierung })),
+    bereiche: bereiche.map((b) => ({ id: b.id, name: b.name, zweig: b.zweig, sortierung: b.sortierung, laufend: b.laufend })),
     regeln: regeln.map((r) => ({ id: r.id, bereichId: r.areaId, richtung: r.richtung, feld: r.feld, muster: r.muster, rang: r.rang })),
   };
 }
@@ -58,6 +60,7 @@ export async function exportiereBereichsliste(): Promise<Bereichsliste> {
     bereiche: bereiche.map((b) => ({
       name: b.name,
       zweig: b.zweig,
+      ...(b.laufend ? { laufend: true } : {}),
       regeln: regeln.filter((r) => r.bereichId === b.id).map((r) => ({ feld: r.feld, muster: r.muster, richtung: r.richtung, rang: r.rang })),
     })),
   };
@@ -80,7 +83,7 @@ export async function speichereBereichsliste(actor: string, input: Bereichsliste
     let regeln = 0;
     await tx.delete(schema.businessAreaRules);
     for (const [index, bereich] of liste.bereiche.entries()) {
-      const werte = { name: bereich.name, zweig: bereich.zweig, sortierung: index };
+      const werte = { name: bereich.name, zweig: bereich.zweig, laufend: bereich.laufend ?? false, sortierung: index };
       const vorhandeneId = idNachName.get(bereich.name.toLowerCase());
       const [zeile] = vorhandeneId
         ? await tx

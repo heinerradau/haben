@@ -3,6 +3,9 @@ import { Link, createFileRoute, useRouter } from "@tanstack/react-router";
 import { useServerFn } from "@tanstack/react-start";
 import { z } from "zod/mini";
 import { BereichslisteCard } from "../../components/geschaeft/BereichslisteCard.tsx";
+import { FixkostenCard } from "../../components/geschaeft/FixkostenCard.tsx";
+import { GeldflussCard } from "../../components/geschaeft/GeldflussCard.tsx";
+import { KundenCards, MarkeCard } from "../../components/geschaeft/MarkeCard.tsx";
 import { PostenCard } from "../../components/geschaeft/PostenCard.tsx";
 import { WarenCard } from "../../components/geschaeft/WarenCard.tsx";
 import { NoticeBanner } from "../../components/NoticeBanner.tsx";
@@ -20,8 +23,10 @@ export const Route = createFileRoute("/_app/geschaeft")({
   validateSearch: z.object({
     bereich: z.optional(z.union([z.uuid(), z.literal("offen")])),
     jahr: z.optional(z.int().check(z.minimum(1990), z.maximum(2200))),
+    /** Jahr des Geldflusses; ohne Angabe alle Jahre */
+    fluss: z.optional(z.int().check(z.minimum(1990), z.maximum(2200))),
   }),
-  loaderDeps: ({ search }) => search,
+  loaderDeps: ({ search }) => ({ bereich: search.bereich, jahr: search.jahr }),
   loader: ({ deps }) => getGeschaeft({ data: deps }),
   head: () => ({ meta: [{ title: "Geschäftsbereiche · Haben" }], links: [{ rel: "stylesheet", href: styles }] }),
   component: GeschaeftPage,
@@ -251,7 +256,7 @@ function BereichTabelle({ uebersicht, gewaehlt, jahr }: { uebersicht: Uebersicht
 
 function GeschaeftPage() {
   const { uebersicht, liste, waren, posten } = Route.useLoaderData();
-  const { bereich, jahr } = Route.useSearch();
+  const { bereich, jahr, fluss } = Route.useSearch();
   const router = useRouter();
   const assign = useServerFn(assignBeleg);
   const { busy, notice, run } = useAction();
@@ -289,21 +294,7 @@ function GeschaeftPage() {
           </p>
         </section>
       ) : (
-        <>
-          <div className="grid-4">
-            <Kennzahl titel={`Fremdes ${zeitraum}`} summe={summen.fremdes} hinweis="Arbeit für andere: Einnahmen minus direkte Kosten" />
-            <Kennzahl titel={`Eigenes ${zeitraum}`} summe={summen.eigenes} hinweis="Das eigene Geschäft: Verkäufe minus Ware, Werbung, Reisen" />
-            <Kennzahl titel={`Gemeinsame Kosten ${zeitraum}`} summe={summen.gemeinsam} hinweis="Was beide Zweige brauchen: Fahrzeug, Büro, Telefon" />
-            <Kennzahl
-              titel={`Zusammen ${zeitraum}`}
-              summe={bereichSummeGesamt(uebersicht.gesamt)}
-              hinweis={`${uebersicht.quellen.regel + uebersicht.quellen.hand} Posten zugeordnet, ${uebersicht.quellen.offen} offen`}
-            />
-          </div>
-          <JahresBalken uebersicht={uebersicht} />
-          <ZweigTabelle uebersicht={uebersicht} />
-          <BereichTabelle uebersicht={uebersicht} gewaehlt={bereich} jahr={jahr} />
-        </>
+        <GeldflussCard uebersicht={uebersicht} jahr={fluss} />
       )}
 
       {posten && gewaehlterName && (
@@ -316,7 +307,35 @@ function GeschaeftPage() {
         />
       )}
 
-      {!leer && <WarenCard key={waren.stand ?? "leer"} bestand={waren} />}
+      {!leer && (
+        <>
+          <FixkostenCard uebersicht={uebersicht} />
+          <MarkeCard uebersicht={uebersicht} waren={waren} />
+          <KundenCards uebersicht={uebersicht} />
+          <WarenCard key={waren.stand ?? "leer"} bestand={waren} />
+        </>
+      )}
+
+      {!leer && (
+        <details className="geschaeft-zahlen">
+          <summary>Alle Zahlen als Tabellen</summary>
+          <div className="stack-lg">
+            <div className="grid-4">
+              <Kennzahl titel={`Fremdes ${zeitraum}`} summe={summen.fremdes} hinweis="Arbeit für andere: Einnahmen minus direkte Kosten" />
+              <Kennzahl titel={`Eigenes ${zeitraum}`} summe={summen.eigenes} hinweis="Das eigene Geschäft: Verkäufe minus Ware, Werbung, Reisen" />
+              <Kennzahl titel={`Gemeinsame Kosten ${zeitraum}`} summe={summen.gemeinsam} hinweis="Was beide Zweige brauchen: Fahrzeug, Büro, Telefon" />
+              <Kennzahl
+                titel={`Zusammen ${zeitraum}`}
+                summe={bereichSummeGesamt(uebersicht.gesamt)}
+                hinweis={`${uebersicht.quellen.regel + uebersicht.quellen.hand} Posten zugeordnet, ${uebersicht.quellen.offen} offen`}
+              />
+            </div>
+            <JahresBalken uebersicht={uebersicht} />
+            <ZweigTabelle uebersicht={uebersicht} />
+            <BereichTabelle uebersicht={uebersicht} gewaehlt={bereich} jahr={jahr} />
+          </div>
+        </details>
+      )}
 
       <BereichslisteCard liste={liste} offen={leer} />
 

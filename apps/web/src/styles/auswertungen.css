@@ -177,3 +177,45 @@
 @media (max-width: 640px) {
   .geschaeft-balken-reihe { grid-template-columns: 96px 1fr 88px; }
 }
+
+/* Geschäftsbereiche: Geldfluss, eigenes Geschäft über die Jahre, Kundenlisten. Farbe steht für den Zweig. */
+.geschaeft-fluss { --zweig-eigenes: #2a78d6; --zweig-fremdes: #eb6834; --zweig-gemeinsam: #8b919c; --zweig-eigenes-soft: #cde2fb; }
+[data-theme="nacht"] .geschaeft-fluss, [data-theme="tiefsee"] .geschaeft-fluss { --zweig-eigenes: #3987e5; --zweig-fremdes: #d95926; --zweig-gemeinsam: #7d838e; --zweig-eigenes-soft: #1c3a5e; }
+.fluss-jahre { display: flex; flex-wrap: wrap; gap: 8px; }
+.fluss-chip { border: 1px solid var(--line-strong); border-radius: 999px; padding: 4px 14px; font-size: 14px; color: var(--ink); text-decoration: none; }
+.fluss-chip:hover { background: var(--accent-tint); }
+.fluss-chip[aria-current="true"] { background: var(--ink); border-color: var(--ink); color: var(--surface); }
+.fluss-satz { margin: 0; font-size: clamp(18px, 2.4vw, 24px); line-height: 1.35; max-width: 36em; text-wrap: balance; }
+.fluss-satz b { white-space: nowrap; }
+.fluss-legende { display: flex; flex-wrap: wrap; gap: 4px 18px; }
+.fluss-legende i { display: inline-block; width: 12px; height: 12px; border-radius: 3px; margin-right: 6px; vertical-align: -1px; }
+.geschaeft-fluss svg { display: block; max-width: none; font-family: var(--sans); }
+.fluss-name { font-size: 14px; font-weight: 600; fill: var(--ink); }
+.fluss-wert { font-weight: 400; fill: var(--muted); font-variant-numeric: tabular-nums; }
+.fluss-band { opacity: 0.28; transition: opacity 0.12s; }
+.fluss-knoten { cursor: pointer; }
+.fluss-knoten:hover .fluss-band, .fluss-knoten:focus-visible .fluss-band { opacity: 0.5; }
+.fluss-knoten:hover .fluss-name, .fluss-knoten:focus-visible .fluss-name { text-decoration: underline; }
+.fluss-knoten:focus-visible { outline: none; }
+.fluss-topf-aus { fill: var(--line-strong); }
+.fluss-topf-text { font-size: 13px; fill: var(--ink-2); }
+.fluss-topf-zahl { font-weight: 600; font-variant-numeric: tabular-nums; }
+.fluss-topf-rest { fill: var(--ink); }
+.fluss-rest-text { font-size: 13px; fill: var(--surface); }
+.fluss-rest-zahl { font-size: 19px; font-weight: 700; font-variant-numeric: tabular-nums; }
+.fluss-gitter { stroke: var(--line); }
+.fluss-achse { font-size: 12px; fill: var(--muted); }
+.fluss-zwischen { fill: var(--zweig-eigenes-soft); opacity: 0.6; }
+.fluss-linie-ein { fill: none; stroke: var(--zweig-eigenes); stroke-width: 3; stroke-linejoin: round; }
+.fluss-linie-aus { fill: none; stroke: var(--zweig-gemeinsam); stroke-width: 2.5; stroke-dasharray: 7 5; stroke-linecap: round; }
+.fluss-punkt-ein { fill: var(--zweig-eigenes); stroke: var(--surface); stroke-width: 2; }
+.fluss-punkt-aus { fill: var(--zweig-gemeinsam); stroke: var(--surface); stroke-width: 2; }
+.fluss-zwei { display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 16px; }
+.fluss-rang { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 10px; }
+.fluss-rang li { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 3px 12px; font-size: 14px; }
+.fluss-rang-spur { grid-column: 1 / -1; height: 8px; border-radius: 4px; background: var(--line-soft); overflow: hidden; }
+.fluss-rang-spur i { display: block; height: 100%; border-radius: 4px; }
+.geschaeft-zahlen > summary { cursor: pointer; font-weight: 600; }
+.geschaeft-zahlen[open] > summary { margin-bottom: 16px; }
+.geschaeft-zahlen > .stack-lg { display: flex; flex-direction: column; gap: 16px; }
+.fix-kopf { display: flex; justify-content: space-between; gap: 12px; flex-wrap: wrap; font-weight: 600; border-bottom: 1px solid var(--line); padding-bottom: 6px; }

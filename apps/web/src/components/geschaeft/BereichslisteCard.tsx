@@ -42,8 +42,8 @@ export function BereichslisteCard({ liste, offen }: { liste: Bereichsliste; offe
         <p className="small muted" style={{ margin: 0 }}>
           Jeder Bereich hat einen Namen, einen Zweig ({BEREICH_ZWEIGE.join(", ")}) und Regeln. Eine Regel passt, wenn das Feld (
           {BEREICH_REGEL_FELDER.join(", ")}) das Muster enthält; Groß- und Kleinschreibung sind egal. „richtung“ beschränkt eine Regel auf „einnahme“ oder
-          „ausgabe“, ein höherer „rang“ gewinnt, sonst das längere Muster. Ein Bereich, der aus der Liste verschwindet, verliert seine Regeln und Zuordnungen
-          von Hand.
+          „ausgabe“, ein höherer „rang“ gewinnt, sonst das längere Muster. Mit „laufend“: true zählt ein Bereich zu den laufenden Kosten (Abos, Internet,
+          Versicherungen). Ein Bereich, der aus der Liste verschwindet, verliert seine Regeln und Zuordnungen von Hand.
         </p>
         <Field label="Liste (JSON)">
           {(control) => (

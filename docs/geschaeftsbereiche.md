@@ -22,6 +22,18 @@ Ein **Bereich** ist ein Teil deines Betriebs, etwa „Auftragsarbeit“, „Onli
 | `gemeinsam` | Kosten, die beide brauchen: Fahrzeug, Büro, Telefon |
 | `neutral` | Steht in der Tabelle, zählt aber nicht ins Gesamtergebnis, etwa Zahlungen ans Finanzamt |
 
+
+## Die Übersicht
+
+Oben steht der **Geldfluss**: links die Bereiche, die Geld gebracht haben, rechts die, in die es geflossen ist, in der Mitte der Topf mit dem, was übrig blieb. Die Bänder sind so dick wie die Beträge, die Farbe steht für den Zweig. Über die Jahresknöpfe siehst du ein einzelnes Jahr; hast du mehr ausgegeben als eingenommen, steht links „Draufgezahlt“. Ein Klick auf einen Bereich zeigt die Belege dahinter.
+
+Darunter folgen:
+
+- **Was jeden Monat abgeht:** die laufenden Kosten im Monatsschnitt der letzten zwölf vollen Monate, je Bereich und Kontakt. Gezählt werden Bereiche, die in der Liste `"laufend": true` tragen, etwa Abos, Internet und Versicherungen.
+- **Dein eigenes Geschäft:** was du über die Jahre hineingesteckt und zurückbekommen hast, als zwei aufsteigende Linien, dazu der Wert der Ware auf Lager.
+- **Wer bezahlt hat:** die größten Kontakte nach Einnahmen, getrennt nach eigenem Geschäft und Arbeit für andere.
+- **Alle Zahlen als Tabellen:** Zweige und Bereiche je Jahr zum Nachschlagen.
+
 ## Regeln
 
 Regeln ordnen die Belege zu. Eine Regel passt, wenn ein Feld des Belegs das Muster enthält; Groß- und Kleinschreibung sind egal, reguläre Ausdrücke gibt es nicht.

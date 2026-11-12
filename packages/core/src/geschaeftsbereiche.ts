@@ -41,6 +41,8 @@ export interface Geschaeftsbereich {
   name: string;
   zweig: BereichZweig;
   sortierung: number;
+  /** Laufende Kosten (Abos, Internet, Versicherungen): Der Bereich erscheint mit seinem Monatsschnitt unter „Was jeden Monat abgeht“ */
+  laufend?: boolean;
 }
 
 export interface BereichRegel {

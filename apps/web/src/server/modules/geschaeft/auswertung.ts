@@ -81,6 +81,75 @@ export interface GeschaeftUebersicht {
   gesamt: Record<number, BereichSumme>;
   /** Wie die Posten zugeordnet wurden */
   quellen: { hand: number; regel: number; offen: number };
+  /** Wer am meisten bezahlt hat, je Zweig mit Einnahmen: Kontakte nach Summe der Einnahmen über alle Jahre */
+  kunden: Record<"eigenes" | "fremdes", Kunde[]>;
+  fixkosten: Fixkosten | null;
+}
+
+/** Laufende Kosten der letzten zwölf vollen Monate, aus den Bereichen mit `laufend` */
+export interface Fixkosten {
+  /** Erster und letzter Monat des Zeitraums, JJJJ-MM */
+  von: string;
+  bis: string;
+  /** Summe der zwölf Monate */
+  summe: number;
+  /** Je Kontakt und Bereich, die größten zuerst */
+  posten: { kontakt: string; bereichId: string; summe: number; monate: number }[];
+}
+
+/** Monat `n` Monate vor `monat` (JJJJ-MM) */
+function monatDavor(monat: string, n: number): string {
+  const index = Number(monat.slice(0, 4)) * 12 + Number(monat.slice(5, 7)) - 1 - n;
+  return `${Math.floor(index / 12)}-${String((index % 12) + 1).padStart(2, "0")}`;
+}
+
+/**
+ * Was regelmäßig abgeht: Ausgaben der Bereiche mit `laufend` in den zwölf vollen Monaten vor dem Monat des jüngsten
+ * Belegs, je Kontakt. null ohne solche Bereiche oder ohne Belege.
+ */
+function fixkosten(posten: readonly ZugeordneterPosten[], bereiche: readonly Geschaeftsbereich[]): Fixkosten | null {
+  const laufend = new Set(bereiche.filter((b) => b.laufend).map((b) => b.id));
+  const juengster =
+    posten
+      .map((p) => p.datum)
+      .sort()
+      .at(-1) ?? "";
+  if (laufend.size === 0 || !juengster) return null;
+  const bis = monatDavor(juengster.slice(0, 7), 1);
+  const von = monatDavor(bis, 11);
+  const jeKontakt = new Map<string, { kontakt: string; bereichId: string; summe: number; monate: Set<string> }>();
+  for (const p of posten) {
+    const monat = p.datum.slice(0, 7);
+    if (p.richtung !== "ausgabe" || !p.bereichId || !laufend.has(p.bereichId) || monat < von || monat > bis) continue;
+    const key = `${p.bereichId}\u0000${p.kontakt}`;
+    const eintrag = jeKontakt.get(key) ?? { kontakt: p.kontakt, bereichId: p.bereichId, summe: 0, monate: new Set<string>() };
+    eintrag.summe += p.netto;
+    eintrag.monate.add(monat);
+    jeKontakt.set(key, eintrag);
+  }
+  const liste = [...jeKontakt.values()]
+    .map((e) => ({ kontakt: e.kontakt, bereichId: e.bereichId, summe: e.summe, monate: e.monate.size }))
+    .sort((a, b) => b.summe - a.summe || a.kontakt.localeCompare(b.kontakt, "de"));
+  return { von, bis, summe: liste.reduce((s, e) => s + e.summe, 0), posten: liste };
+}
+
+export interface Kunde {
+  kontakt: string;
+  einnahmen: number;
+  posten: number;
+}
+
+/** So viele Kontakte je Zweig zeigt die Übersicht */
+const KUNDEN_MAX = 8;
+
+function groessteKunden(posten: readonly ZugeordneterPosten[], zweigVon: ReadonlyMap<string, string>, zweig: "eigenes" | "fremdes"): Kunde[] {
+  const jeKontakt = new Map<string, Kunde>();
+  for (const p of posten) {
+    if (p.richtung !== "einnahme" || !p.bereichId || zweigVon.get(p.bereichId) !== zweig || !p.kontakt) continue;
+    const kunde = jeKontakt.get(p.kontakt) ?? { kontakt: p.kontakt, einnahmen: 0, posten: 0 };
+    jeKontakt.set(p.kontakt, { ...kunde, einnahmen: kunde.einnahmen + p.netto, posten: kunde.posten + 1 });
+  }
+  return [...jeKontakt.values()].sort((a, b) => b.einnahmen - a.einnahmen || a.kontakt.localeCompare(b.kontakt, "de")).slice(0, KUNDEN_MAX);
 }
 
 async function zugeordnetePosten(): Promise<{ posten: ZugeordneterPosten[]; bereiche: Geschaeftsbereich[]; regelnJeBereich: Map<string, number> }> {
@@ -94,6 +163,7 @@ async function zugeordnetePosten(): Promise<{ posten: ZugeordneterPosten[]; bere
 export async function geschaeftUebersicht(): Promise<GeschaeftUebersicht> {
   const { posten, bereiche, regelnJeBereich } = await zugeordnetePosten();
   const auswertung = bereicheAuswerten(posten, bereiche);
+  const zweigVon = new Map(bereiche.map((b) => [b.id, b.zweig]));
   const quellen = { hand: 0, regel: 0, offen: 0 };
   for (const p of posten) quellen[p.quelle] += 1;
   return {
@@ -107,6 +177,8 @@ export async function geschaeftUebersicht(): Promise<GeschaeftUebersicht> {
     offenGesamt: bereichSummeGesamt(auswertung.offen),
     gesamt: auswertung.gesamt,
     quellen,
+    kunden: { eigenes: groessteKunden(posten, zweigVon, "eigenes"), fremdes: groessteKunden(posten, zweigVon, "fremdes") },
+    fixkosten: fixkosten(posten, bereiche),
   };
 }
 

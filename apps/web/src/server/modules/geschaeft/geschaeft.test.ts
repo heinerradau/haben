@@ -190,6 +190,49 @@ describe.skipIf(!testDatabaseUrl)("Geschäftsbereiche (Postgres)", () => {
     await expect(geschaeft.ordneBelegZu(actor, unklar, crypto.randomUUID())).rejects.toThrow(/Bereich nicht gefunden/);
   });
 
+  it("nennt die größten Kunden je Zweig und rechnet laufende Kosten über die letzten zwölf vollen Monate", async () => {
+    await geschaeft.speichereBereichsliste(actor, {
+      bereiche: [
+        ...liste.bereiche,
+        { name: "Abos", zweig: "gemeinsam", laufend: true, regeln: [{ feld: "kategorie", muster: "Lizenzen", richtung: "ausgabe" }] },
+      ],
+    });
+    expect((await geschaeft.exportiereBereichsliste()).bereiche.map((b) => b.laufend)).toEqual([undefined, undefined, undefined, undefined, true]);
+    await beleg({ direction: "einnahme", number: "RE1", date: "2025-03-01", net: 1_000_00, contact: "Theater Nord" });
+    await beleg({ direction: "einnahme", number: "RE2", date: "2026-03-01", net: 500_00, contact: "Theater Nord" });
+    await beleg({ direction: "einnahme", number: "RE3", date: "2026-04-01", net: 2_000_00, contact: "Theater Süd" });
+    await beleg({ direction: "einnahme", type: "salesinvoice", number: "SHOP1", date: "2026-04-02", net: 40_00, contact: "Laden" });
+    const abo = (date: string, net: number, contact = "Zeichenprogramm") =>
+      beleg({ direction: "ausgabe", type: "purchaseinvoice", date, net, contact, categories: [{ name: "Lizenzen und Konzessionen", net }] });
+    await abo("2025-06-15", 99_00); // vor dem Zeitraum
+    await abo("2025-07-15", 10_00);
+    await abo("2026-01-15", 10_00);
+    await abo("2026-01-20", 4_00, "Wolkenspeicher");
+    await abo("2026-06-15", 12_00);
+    await abo("2026-07-03", 50_00); // im Monat des jüngsten Belegs: noch kein voller Monat
+
+    const u = await geschaeft.geschaeftUebersicht();
+    expect(u.kunden.fremdes).toEqual([
+      { kontakt: "Theater Süd", einnahmen: 2_000_00, posten: 1 },
+      { kontakt: "Theater Nord", einnahmen: 1_500_00, posten: 2 },
+    ]);
+    expect(u.kunden.eigenes).toEqual([{ kontakt: "Laden", einnahmen: 40_00, posten: 1 }]);
+    const abos = u.zeilen.find((z) => z.bereich.name === "Abos")!.bereich;
+    expect(abos.laufend).toBe(true);
+    expect(u.fixkosten).toEqual({
+      von: "2025-07",
+      bis: "2026-06",
+      summe: 36_00,
+      posten: [
+        { kontakt: "Zeichenprogramm", bereichId: abos.id, summe: 32_00, monate: 3 },
+        { kontakt: "Wolkenspeicher", bereichId: abos.id, summe: 4_00, monate: 1 },
+      ],
+    });
+
+    await geschaeft.speichereBereichsliste(actor, liste);
+    expect((await geschaeft.geschaeftUebersicht()).fixkosten).toBeNull();
+  });
+
   it("lässt den archivierten Beleg unverändert", async () => {
     await geschaeft.speichereBereichsliste(actor, liste);
     const id = await beleg({ direction: "ausgabe", type: "purchaseinvoice", date: "2025-06-01", net: 70_00, categories: [{ name: "Sonstiges", net: 70_00 }] });

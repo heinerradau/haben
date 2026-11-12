@@ -3342,6 +3342,8 @@ export const businessAreas = pgTable("business_areas", {
   id: uuid("id").primaryKey().defaultRandom(),
   name: text("name").notNull().unique(),
   zweig: text("zweig", { enum: BEREICH_ZWEIGE }).notNull(),
+  /** Laufende Kosten: Der Bereich erscheint mit seinem Monatsschnitt in der Übersicht */
+  laufend: boolean("laufend").notNull().default(false),
   /** Reihenfolge in der Auswertung, aufsteigend */
   sortierung: integer("sortierung").notNull().default(0),
   createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),

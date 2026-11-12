@@ -16,4 +16,13 @@ export {
   type BereichslisteInput,
 } from "./bereiche.ts";
 export { ladeWaren, speichereWarenliste, warenlisteSchema, type GeladeneWaren, type Warenliste } from "./waren.ts";
-export { geschaeftPosten, geschaeftUebersicht, ladePosten, type BereichZeile, type GeschaeftUebersicht, type PostenListe } from "./auswertung.ts";
+export {
+  geschaeftPosten,
+  geschaeftUebersicht,
+  ladePosten,
+  type BereichZeile,
+  type Fixkosten,
+  type GeschaeftUebersicht,
+  type Kunde,
+  type PostenListe,
+} from "./auswertung.ts";

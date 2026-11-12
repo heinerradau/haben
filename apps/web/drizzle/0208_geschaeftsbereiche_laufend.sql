@@ -1,0 +1,1 @@
+ALTER TABLE "business_areas" ADD COLUMN "laufend" boolean DEFAULT false NOT NULL;
