@@ -1,6 +1,6 @@
-import { formatEuro } from "@haben/core";
 import { Link } from "@tanstack/react-router";
 import type { GeschaeftUebersicht } from "../../server/modules/geschaeft/index.ts";
+import { euro } from "./euro.ts";
 
 /*
  * Laufende Kosten: was aus den Bereichen mit „laufend“ (Abos, Internet, Versicherungen) im Schnitt jeden Monat abgeht,
@@ -26,8 +26,8 @@ export function FixkostenCard({ uebersicht }: { uebersicht: GeschaeftUebersicht 
           Was jeden Monat abgeht
         </h2>
         <p className="fluss-satz" style={{ marginTop: 8 }}>
-          Deine laufenden Kosten liegen im Schnitt bei <b>{formatEuro(Math.round(fixkosten.summe / 12))}</b> im Monat, das sind{" "}
-          <b>{formatEuro(fixkosten.summe)}</b> im Jahr.
+          Deine laufenden Kosten liegen im Schnitt bei <b>{euro(Math.round(fixkosten.summe / 12))}</b> im Monat, das sind <b>{euro(fixkosten.summe)}</b> im
+          Jahr.
         </p>
         <p className="small muted" style={{ margin: "6px 0 0" }}>
           Gerechnet über {monatName(fixkosten.von)} bis {monatName(fixkosten.bis)}, netto. Gezählt werden die Bereiche, die in der Liste unten als „laufend“
@@ -41,7 +41,7 @@ export function FixkostenCard({ uebersicht }: { uebersicht: GeschaeftUebersicht 
               <Link to="/geschaeft" search={{ bereich: bereich.id }} hash="posten-heading">
                 {bereich.name}
               </Link>
-              <span className="mono">{formatEuro(Math.round(summe / 12))} im Monat</span>
+              <span className="mono">{euro(Math.round(summe / 12))} im Monat</span>
             </div>
             {posten.length === 0 ? (
               <p className="small muted" style={{ margin: 0 }}>
@@ -54,7 +54,7 @@ export function FixkostenCard({ uebersicht }: { uebersicht: GeschaeftUebersicht 
                     <span>
                       {p.kontakt || "Ohne Kontakt"} <span className="small muted">· in {p.monate} von 12 Monaten</span>
                     </span>
-                    <span className="mono">{formatEuro(Math.round(p.summe / 12))}</span>
+                    <span className="mono">{euro(Math.round(p.summe / 12))}</span>
                     <div className="fluss-rang-spur">
                       <i
                         style={{

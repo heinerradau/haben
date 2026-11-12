@@ -1,5 +1,6 @@
-import { aufgelaufen, formatEuro, warenSumme } from "@haben/core";
+import { aufgelaufen, warenSumme } from "@haben/core";
 import type { GeladeneWaren, GeschaeftUebersicht, Kunde } from "../../server/modules/geschaeft/index.ts";
+import { euro } from "./euro.ts";
 
 /*
  * Das eigene Geschäft über die Jahre: was hineingesteckt wurde, was zurückkam und was als Ware auf Lager liegt.
@@ -57,29 +58,28 @@ export function MarkeCard({ uebersicht, waren }: { uebersicht: GeschaeftUebersic
         </p>
       </div>
       <div className="grid-4">
-        <Kennzahl titel="Hineingesteckt" wert={formatEuro(ende.ausgaben)} hinweis="Ware, Werkstatt, Werbung, Reisen" />
-        <Kennzahl titel="Zurückbekommen" wert={formatEuro(ende.einnahmen)} hinweis="Verkäufe und eigene Projekte" />
-        <Kennzahl titel={stand >= 0 ? "Im Plus mit" : "Noch im Minus mit"} wert={formatEuro(Math.abs(stand))} hinweis={`Stand ${ende.jahr}`} />
+        <Kennzahl titel="Hineingesteckt" wert={euro(ende.ausgaben)} hinweis="Ware, Werkstatt, Werbung, Reisen" />
+        <Kennzahl titel="Zurückbekommen" wert={euro(ende.einnahmen)} hinweis="Verkäufe und eigene Projekte" />
+        <Kennzahl titel={stand >= 0 ? "Im Plus mit" : "Noch im Minus mit"} wert={euro(Math.abs(stand))} hinweis={`Stand ${ende.jahr}`} />
         {lager.stueck > 0 && (
           <Kennzahl
             titel="Steckt noch in Ware"
-            wert={formatEuro(lager.wert)}
-            hinweis={`${lager.stueck.toLocaleString("de-DE")} Stück, Einkauf ${formatEuro(lager.einkauf)}`}
+            wert={euro(lager.wert)}
+            hinweis={`${lager.stueck.toLocaleString("de-DE")} Stück, Einkauf ${euro(lager.einkauf)}`}
           />
         )}
       </div>
       <div className="table-scroll">
         <svg
           viewBox={`0 0 ${W} ${H}`}
-          width={W}
-          height={H}
+          className="fluss-bild"
           role="img"
           aria-label={`Aufgelaufene Einnahmen und Ausgaben des eigenen Geschäfts von ${punkte[0]!.jahr} bis ${ende.jahr}; die Zahlen stehen in der Tabelle „Zweige je Jahr“`}
         >
           {linien.map((cents) => (
             <g key={cents}>
               <line x1={LINKS} x2={W - RECHTS} y1={y(cents)} y2={y(cents)} className="fluss-gitter" />
-              <text x={LINKS - 10} y={y(cents) + 4} textAnchor="end" className="fluss-achse">
+              <text x={LINKS - 10} y={y(cents) + 4} style={{ textAnchor: "end" }} className="fluss-achse">
                 {cents === 0 ? "0 €" : `${(cents / 100_000).toLocaleString("de-DE")} Tsd.`}
               </text>
             </g>
@@ -89,11 +89,11 @@ export function MarkeCard({ uebersicht, waren }: { uebersicht: GeschaeftUebersic
           <path d={linie((p) => p.einnahmen)} className="fluss-linie-ein" />
           {punkte.map((p, i) => (
             <g key={p.jahr}>
-              <title>{`Bis Ende ${p.jahr}: zurückbekommen ${formatEuro(p.einnahmen)}, hineingesteckt ${formatEuro(p.ausgaben)}`}</title>
+              <title>{`Bis Ende ${p.jahr}: zurückbekommen ${euro(p.einnahmen)}, hineingesteckt ${euro(p.ausgaben)}`}</title>
               <rect x={x(i) - 36} y={OBEN} width={72} height={H - OBEN - UNTEN} fill="transparent" />
               <circle cx={x(i)} cy={y(p.ausgaben)} r={5} className="fluss-punkt-aus" />
               <circle cx={x(i)} cy={y(p.einnahmen)} r={5.5} className="fluss-punkt-ein" />
-              <text x={x(i)} y={H - 12} textAnchor="middle" className="fluss-name">
+              <text x={x(i)} y={H - 12} style={{ textAnchor: "middle" }} className="fluss-name">
                 {p.jahr}
               </text>
             </g>
@@ -101,13 +101,13 @@ export function MarkeCard({ uebersicht, waren }: { uebersicht: GeschaeftUebersic
           <text x={W - RECHTS + 16} y={yEin + oben * auseinander + 5} className="fluss-name">
             Zurückbekommen
             <tspan dx={8} className="fluss-wert">
-              {formatEuro(ende.einnahmen)}
+              {euro(ende.einnahmen)}
             </tspan>
           </text>
           <text x={W - RECHTS + 16} y={yAus - oben * auseinander + 5} className="fluss-name">
             Hineingesteckt
             <tspan dx={8} className="fluss-wert">
-              {formatEuro(ende.ausgaben)}
+              {euro(ende.ausgaben)}
             </tspan>
           </text>
         </svg>
@@ -135,7 +135,7 @@ function Kundenliste({ titel, hinweis, kunden, farbe }: { titel: string; hinweis
           {kunden.map((k) => (
             <li key={k.kontakt}>
               <span>{k.kontakt}</span>
-              <span className="mono">{formatEuro(k.einnahmen)}</span>
+              <span className="mono">{euro(k.einnahmen)}</span>
               <div className="fluss-rang-spur">
                 <i style={{ width: `${Math.max((k.einnahmen / max) * 100, 1)}%`, background: farbe }} />
               </div>

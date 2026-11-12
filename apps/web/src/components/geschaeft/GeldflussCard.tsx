@@ -1,14 +1,15 @@
-import { BEREICH_ZWEIG_LABEL, formatEuro, geldfluss, type BereichZweig, type FlussPosten } from "@haben/core";
+import { BEREICH_ZWEIG_LABEL, geldfluss, type BereichZweig, type FlussPosten } from "@haben/core";
 import { Link } from "@tanstack/react-router";
 import type { GeschaeftUebersicht } from "../../server/modules/geschaeft/index.ts";
+import { euro } from "./euro.ts";
 
 /*
  * Geldfluss: links die Bereiche, die Geld gebracht haben, rechts die, in die es geflossen ist, in der Mitte der Topf
  * mit dem, was übrig blieb. Die Bänder sind so dick wie die Beträge. Ein Klick auf einen Bereich zeigt seine Belege.
  */
 
-const BREITE = 980;
-const RAND = 262;
+const BREITE = 1000;
+const RAND = 270;
 const KNOTEN = 14;
 const TOPF = 150;
 const LUECKE = 14;
@@ -41,7 +42,8 @@ function knoten(posten: readonly FlussPosten[], gesamt: number, seite: "ein" | "
   const klein = posten.filter((p) => p.cents < gesamt * KLEIN);
   const liste: Knoten[] = (klein.length > 1 ? gross : posten).map((p) => ({
     key: `${seite}-${p.id}`,
-    name: p.name,
+    // Zusätze in Klammern („Auftragsarbeit (Design, Bühne)“) passen nicht neben das Band
+    name: p.name.replace(/\s*\([^)]*\)\s*$/, ""),
     farbe: p.zweig,
     cents: p.cents,
     bereichId: p.id,
@@ -52,7 +54,7 @@ function knoten(posten: readonly FlussPosten[], gesamt: number, seite: "ein" | "
       name: "Kleineres",
       farbe: "gemeinsam",
       cents: klein.reduce((s, p) => s + p.cents, 0),
-      hinweis: klein.map((p) => `${p.name} ${formatEuro(p.cents)}`).join(", "),
+      hinweis: klein.map((p) => `${p.name} ${euro(p.cents)}`).join(", "),
     });
   }
   return liste;
@@ -94,16 +96,16 @@ export function GeldflussCard({ uebersicht, jahr }: { uebersicht: GeschaeftUeber
       const h = hoehe(q);
       const hTopf = q.cents * k;
       const pfad = linkeSeite ? band(x + KNOTEN, y, h, topfX, yTopf, hTopf) : band(topfX + TOPF, yTopf, hTopf, x, y, h);
-      const titel = `${q.name}: ${formatEuro(q.cents)}, ${prozent(q.cents, gesamt)} ${linkeSeite ? "der Einnahmen" : "vom Geld"}${q.hinweis ? ` (${q.hinweis})` : ""}`;
+      const titel = `${q.name}: ${euro(q.cents)}, ${prozent(q.cents, gesamt)} ${linkeSeite ? "der Einnahmen" : "vom Geld"}${q.hinweis ? ` (${q.hinweis})` : ""}`;
       const inhalt = (
         <>
           <title>{titel}</title>
           <path d={pfad} fill={FARBE[q.farbe]} className="fluss-band" />
           <rect x={x} y={y} width={KNOTEN} height={h} rx={3} fill={FARBE[q.farbe]} />
-          <text x={linkeSeite ? x - 12 : x + KNOTEN + 12} y={y + h / 2 + 5} textAnchor={linkeSeite ? "end" : "start"} className="fluss-name">
+          <text x={linkeSeite ? x - 12 : x + KNOTEN + 12} y={y + h / 2 + 5} style={{ textAnchor: linkeSeite ? "end" : "start" }} className="fluss-name">
             {q.name}
             <tspan dx={8} className="fluss-wert">
-              {formatEuro(q.cents)}
+              {euro(q.cents)}
             </tspan>
           </text>
         </>
@@ -141,14 +143,14 @@ export function GeldflussCard({ uebersicht, jahr }: { uebersicht: GeschaeftUeber
         ))}
       </nav>
       <p className="fluss-satz" id="fluss-heading">
-        {wann} hast du <b>{formatEuro(fluss.einnahmen)}</b> eingenommen und <b>{formatEuro(fluss.ausgaben)}</b> ausgegeben.{" "}
+        {wann} hast du <b>{euro(fluss.einnahmen)}</b> eingenommen und <b>{euro(fluss.ausgaben)}</b> ausgegeben.{" "}
         {fluss.rest >= 0 ? (
           <>
-            Übrig geblieben sind <b>{formatEuro(fluss.rest)}</b>.
+            Übrig geblieben sind <b>{euro(fluss.rest)}</b>.
           </>
         ) : (
           <>
-            Das sind <b>{formatEuro(-fluss.rest)}</b> mehr, als reinkam.
+            Das sind <b>{euro(-fluss.rest)}</b> mehr, als reinkam.
           </>
         )}
       </p>
@@ -169,8 +171,7 @@ export function GeldflussCard({ uebersicht, jahr }: { uebersicht: GeschaeftUeber
         <div className="table-scroll">
           <svg
             viewBox={`0 0 ${BREITE} ${H}`}
-            width={BREITE}
-            height={H}
+            className="fluss-bild"
             role="group"
             aria-label="Geldfluss: Einnahmen links, Ausgaben rechts, in der Mitte was übrig blieb"
           >
@@ -178,23 +179,23 @@ export function GeldflussCard({ uebersicht, jahr }: { uebersicht: GeschaeftUeber
             {seite(rechts, false)}
             <rect x={topfX} y={topfY} width={TOPF} height={Math.max(ausH - (restH > 0 ? 2 : 0), 0)} rx={6} className="fluss-topf-aus" />
             {ausH >= 40 && (
-              <text x={BREITE / 2} y={topfY + ausH / 2 - 3} textAnchor="middle" className="fluss-topf-text">
+              <text x={BREITE / 2} y={topfY + ausH / 2 - 3} style={{ textAnchor: "middle" }} className="fluss-topf-text">
                 Ausgegeben
                 <tspan x={BREITE / 2} dy={18} className="fluss-topf-zahl">
-                  {formatEuro(fluss.ausgaben)}
+                  {euro(fluss.ausgaben)}
                 </tspan>
               </text>
             )}
             {restH > 0 && (
               <>
                 <rect x={topfX - 8} y={topfY + ausH} width={TOPF + 16} height={restH} rx={6} className="fluss-topf-rest">
-                  <title>{`Bleibt übrig: ${formatEuro(fluss.rest)}, ${prozent(fluss.rest, fluss.einnahmen)} der Einnahmen`}</title>
+                  <title>{`Bleibt übrig: ${euro(fluss.rest)}, ${prozent(fluss.rest, fluss.einnahmen)} der Einnahmen`}</title>
                 </rect>
                 {restH >= 58 ? (
-                  <text x={BREITE / 2} y={topfY + ausH + restH / 2 - 12} textAnchor="middle" className="fluss-rest-text">
+                  <text x={BREITE / 2} y={topfY + ausH + restH / 2 - 12} style={{ textAnchor: "middle" }} className="fluss-rest-text">
                     Bleibt übrig
                     <tspan x={BREITE / 2} dy={22} className="fluss-rest-zahl">
-                      {formatEuro(fluss.rest)}
+                      {euro(fluss.rest)}
                     </tspan>
                     <tspan x={BREITE / 2} dy={18}>
                       {prozent(fluss.rest, fluss.einnahmen)} der Einnahmen
@@ -202,8 +203,8 @@ export function GeldflussCard({ uebersicht, jahr }: { uebersicht: GeschaeftUeber
                   </text>
                 ) : (
                   restH >= 18 && (
-                    <text x={BREITE / 2} y={topfY + ausH + restH / 2 + 5} textAnchor="middle" className="fluss-rest-text">
-                      Bleibt übrig {formatEuro(fluss.rest)}
+                    <text x={BREITE / 2} y={topfY + ausH + restH / 2 + 5} style={{ textAnchor: "middle" }} className="fluss-rest-text">
+                      Bleibt übrig {euro(fluss.rest)}
                     </text>
                   )
                 )}

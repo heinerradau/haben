@@ -189,7 +189,8 @@
 .fluss-satz b { white-space: nowrap; }
 .fluss-legende { display: flex; flex-wrap: wrap; gap: 4px 18px; }
 .fluss-legende i { display: inline-block; width: 12px; height: 12px; border-radius: 3px; margin-right: 6px; vertical-align: -1px; }
-.geschaeft-fluss svg { display: block; max-width: none; font-family: var(--sans); }
+.geschaeft-fluss svg { display: block; font-family: var(--sans); }
+.fluss-bild { width: 100%; min-width: 760px; height: auto; }
 .fluss-name { font-size: 14px; font-weight: 600; fill: var(--ink); }
 .fluss-wert { font-weight: 400; fill: var(--muted); font-variant-numeric: tabular-nums; }
 .fluss-band { opacity: 0.28; transition: opacity 0.12s; }
