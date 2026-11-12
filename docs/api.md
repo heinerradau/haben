@@ -35,7 +35,7 @@ Es sind dieselben Tokens wie für die [KI-Assistenten](ki-assistenten.md); was e
 | `kontakte:schreiben` | dazu `POST /kontakte`, `PATCH /kontakte/{id}` |
 | `rechnungen:lesen` | `GET /rechnungen`, `GET /rechnungen/{id}` |
 | `rechnungen:entwuerfe` | dazu `POST /rechnungen`, `PATCH /rechnungen/{id}`, `DELETE /rechnungen/{id}` |
-| `belege:lesen` | `GET /belege`, `GET /belege/{id}` |
+| `belege:lesen` | `GET /belege`, `GET /belege/{id}`, `GET /belege/{id}/datei` |
 | `belege:anlegen` | dazu `POST /belege` |
 | `belege:auslesen` | `GET /belege`, `GET /belege/{id}` und `POST /belege/{id}/auslesung` |
 | `belege:aendern` | `GET /belege`, `GET /belege/{id}` und `PATCH /belege/{id}` |
@@ -236,6 +236,16 @@ curl -s "$HABEN/belege/0c9a…" -H "Authorization: Bearer $TOKEN"
 ```
 
 `status` ist `neu` („Zu prüfen“) oder `gebucht`, `booked` und `bookedAt` sagen dasselbe als Wahrheitswert und Zeitpunkt. Ein stornierter Beleg bleibt `gebucht`; `cancelledOn` nennt dann das Datum der Gegenbuchung (sonst `null`; siehe [Stornieren](belege.md#stornieren-und-neu-erfassen)), und in der Einzelansicht zeigt `replacedById` auf seine Neuerfassung, `replacesId` umgekehrt von der Neuerfassung auf den stornierten Beleg ([Stornieren und neu erfassen](belege.md#stornieren-und-neu-erfassen)). Ein gebuchter Beleg ist gesperrt und versiegelt, mit seiner Referenz ([Hash-Kette und Siegel](buchhaltung.md#manipulationserkennung-hash-kette-und-siegel)); dieselbe Referenz liefert dann weiter diesen Beleg. Löschst du einen ungebuchten Beleg in Haben, ist seine Referenz wieder frei. Die Datei selbst gibt die API nicht heraus, und ändern oder löschen lässt sich ein Beleg nur in Haben.
+
+### Belegdatei abrufen
+
+`GET /belege/{id}/datei` (Recht `belege:lesen`) liefert die abgelegte Datei unverändert, mit ihrem `Content-Type` und nicht als JSON:
+
+```sh
+curl -s "$HABEN/belege/0c9a…/datei" -H "Authorization: Bearer $TOKEN" -o beleg.pdf
+```
+
+So liest ein Werkzeug oder KI-Assistent auch Belege, die du in Haben hochgeladen, mit dem Handy fotografiert oder per E-Mail bekommen hast, und liefert die Werte danach als gelieferte Auslesung.
 
 ### Gelieferte Auslesung
 

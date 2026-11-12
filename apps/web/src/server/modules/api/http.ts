@@ -10,6 +10,8 @@ import type { ErrorCode } from "./schemas.ts";
 export interface ApiResult {
   status: number;
   body?: unknown;
+  /** Rohe Datei statt JSON, etwa die Belegdatei; der Content-Type steht dann in `headers` */
+  bytes?: Uint8Array<ArrayBuffer>;
   headers?: Record<string, string>;
 }
 
@@ -80,6 +82,13 @@ export function validate<T extends z.ZodType>(schema: T, value: unknown): { data
 }
 
 export function toResponse(result: ApiResult): Response {
+  if (result.bytes) {
+    // Dateien nie als etwas anderes deuten lassen, als der Server sagt
+    return new Response(result.bytes, {
+      status: result.status,
+      headers: { "Cache-Control": "no-store", "X-Content-Type-Options": "nosniff", ...result.headers },
+    });
+  }
   const headers = {
     "Cache-Control": "no-store",
     ...(result.body === undefined ? {} : { "Content-Type": "application/json; charset=utf-8" }),

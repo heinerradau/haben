@@ -446,6 +446,7 @@ describe.skipIf(!testDatabaseUrl)("REST-API /api/v1 (Postgres)", () => {
         "/belege/{id}",
         "/belege/{id}/auslesung",
         "/belege/{id}/buchung",
+        "/belege/{id}/datei",
         "/belege/{id}/neuerfassung",
         "/belege/{id}/storno",
         "/kontakte",

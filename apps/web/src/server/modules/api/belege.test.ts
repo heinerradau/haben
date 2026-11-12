@@ -533,6 +533,21 @@ describe.skipIf(!testDatabaseUrl)("REST-API /api/v1/belege (Postgres)", () => {
       });
     });
 
+    it("gibt die abgelegte Datei unverändert heraus, mit Lese-Recht und nie ohne", async () => {
+      const t = await token(["belege:anlegen"]);
+      const beleg = (await upload(t, jpeg(70), {}, "Quittung Tanke.jpg")).json!;
+      const antwort = await api.handleApiRequest(
+        new Request(`http://localhost:3000/api/v1/belege/${beleg.id as string}/datei`, { headers: { Authorization: `Bearer ${t}` } }),
+      );
+      expect(antwort.status).toBe(200);
+      expect(antwort.headers.get("Content-Type")).toBe("image/jpeg");
+      expect(antwort.headers.get("Content-Disposition")).toBe('attachment; filename="Quittung_Tanke.jpg"');
+      expect(antwort.headers.get("X-Content-Type-Options")).toBe("nosniff");
+      expect(new Uint8Array(await antwort.arrayBuffer())).toEqual(jpeg(70));
+      expect((await send(await token(["kontakte:lesen"]), "GET", `/belege/${beleg.id as string}/datei`)).status).toBe(403);
+      expect((await send(t, "GET", "/belege/00000000-0000-4000-8000-000000000000/datei")).status).toBe(404);
+    });
+
     describe("Buchen über die API", () => {
       const buchen = (t: string, id: unknown) => send(t, "POST", `/belege/${id as string}/buchung`);
 

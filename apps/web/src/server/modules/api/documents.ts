@@ -14,6 +14,7 @@ import {
   uploadDocument,
   type DocumentReference,
 } from "../belege/index.ts";
+import { loadFile } from "../../storage.ts";
 import { fail, notFound, ok, validate, type ApiRequest, type ApiResult } from "./http.ts";
 import { documentCancelSchema, documentPatchSchema } from "./belege-schemas.ts";
 import { documentExtractionSchema, documentQuerySchema, documentUploadSchema, type documentSchema, type documentSummarySchema } from "./schemas.ts";
@@ -195,4 +196,22 @@ export async function reenterDocumentHandler(request: ApiRequest): Promise<ApiRe
   if (!(await getDocument(id))) return notFound(DOCUMENT_NOT_FOUND);
   const neu = await reenterDocument(request.actor, id);
   return respondWith(neu, request, 201, { Location: location(neu) });
+}
+
+/**
+ * Die Belegdatei selbst, so wie sie abgelegt ist: Ein Werkzeug oder KI-Assistent liest damit auch Belege, die über die
+ * Oberfläche, das Handy oder das Postfach hereinkamen, und liefert danach die ausgelesenen Werte.
+ */
+export async function getDocumentFileHandler(request: ApiRequest): Promise<ApiResult> {
+  const loaded = await getDocument(request.params.id!);
+  if (!loaded) return notFound(DOCUMENT_NOT_FOUND);
+  const { sha256, mimeType, filename } = loaded.document;
+  const bytes = await loadFile(sha256);
+  // Dateiname nur aus unverfänglichen Zeichen; der volle Name steht in GET /belege/{id}
+  const name = filename.replace(/[^A-Za-z0-9._-]+/g, "_").slice(0, 100) || "beleg";
+  return {
+    status: 200,
+    bytes: new Uint8Array(bytes),
+    headers: { "Content-Type": mimeType, "Content-Disposition": `attachment; filename="${name}"`, "Content-Length": String(bytes.byteLength) },
+  };
 }

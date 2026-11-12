@@ -8,6 +8,7 @@ import {
   bookDocumentHandler,
   cancelDocumentHandler,
   createDocumentHandler,
+  getDocumentFileHandler,
   getDocumentHandler,
   listDocumentsHandler,
   patchDocumentHandler,
@@ -189,6 +190,19 @@ export const API_ROUTES: ApiRoute[] = [
     description: "Stand der Prüfung: Status, ob gebucht, was vor dem Buchen noch fehlt, und der Link zur Seite in Haben.",
     responses: { 200: { schema: "Document", description: "Der Beleg" } },
     handler: getDocumentHandler,
+  },
+  {
+    method: "GET",
+    path: "/belege/{id}/datei",
+    scope: "belege:lesen",
+    tag: "Belege",
+    summary: "Belegdatei abrufen",
+    description:
+      "Liefert die abgelegte Datei unverändert (PDF, Bild oder E-Rechnungs-XML) mit ihrem Content-Type, nicht als JSON. Damit liest ein Werkzeug " +
+      "oder KI-Assistent auch Belege, die über die Oberfläche, das Handy oder das Postfach hereinkamen, und liefert die Werte danach mit " +
+      "POST /belege/{id}/auslesung.",
+    responses: { 200: { schema: null, description: "Die Datei; Content-Type nennt das Format, Content-Disposition einen Dateinamen" } },
+    handler: getDocumentFileHandler,
   },
   {
     method: "POST",
