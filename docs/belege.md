@@ -30,7 +30,7 @@ Es gibt mehrere Wege, alle führen zum selben Ergebnis:
 | --- | --- |
 | Ziehen und Ablegen | Dateien auf die Fläche „Belege hierher ziehen“ ziehen. |
 | Dateiauswahl | **Dateien auswählen**, auch mehrere auf einmal (bis 50 je Vorgang). |
-| Kamera | Auf dem Handy **Foto aufnehmen**; öffnet direkt die Rückkamera. |
+| Kamera | Auf dem Handy **Foto aufnehmen**; öffnet direkt die Rückkamera. Das Foto wird vor dem Hochladen zu einem JPEG passender Größe, siehe [Fotos vom Handy](#fotos-vom-handy). |
 | Teilen-Menü | In der als App installierten Version (PWA) taucht Haben im Teilen-Menü des Telefons auf. Geteilte Dateien gehen an `/api/belege/teilen` (bis 20 je Vorgang). Bei genau einer Datei öffnet Haben danach gleich den Beleg, sonst die Liste. |
 | E-Mail | Anhänge aus einem eigenen Postfach, siehe [Belege per E-Mail](#belege-per-e-mail). |
 | REST-API | Eigene Werkzeuge, Dokumentenarchive und Skripte schicken Belege mit einem API-Token, siehe [Belege aus der REST-API](#belege-aus-der-rest-api). |
@@ -47,6 +47,16 @@ Erlaubt sind PDF, JPEG, PNG, WebP, HEIC und E-Rechnungs-XML bis 20 MB je Datei. 
 6. **Eigene Rechnung erkennen.** Bei jedem Weg prüft Haben, ob du gerade eine eigene Ausgangsrechnung hochgeladen hast, und schlägt dann keine Ausgabe vor (siehe [Eigene Ausgangsrechnung erkennen](#eigene-ausgangsrechnung-erkennen)).
 
 Ohne E-Rechnung und ohne KI füllst du die Felder von Hand aus.
+
+## Fotos vom Handy
+
+Handys speichern Fotos oft als HEIC und in voller Auflösung, mehrere Megabyte je Quittung. Beim Hochladen unter **Belege** (Kamera oder Dateiauswahl) wandelt der Browser solche Fotos deshalb vorher um:
+
+- **HEIC wird zu JPEG**, damit Haben den Beleg anzeigen und auslesen kann.
+- **Große Bilder werden verkleinert**: längere Kante höchstens 2400 Pixel, das sind bei einer A4-Seite rund 200 dpi. Die Datei liegt danach meist unter 1 MB.
+- Bilder bis 1,5 MB, PDFs und E-Rechnungen gehen unverändert hoch.
+
+Abgelegt und beim Buchen festgeschrieben wird die umgewandelte Datei; sie ist der Beleg. Kann der Browser ein Foto nicht lesen, geht das Original hoch. Achte beim Fotografieren darauf, dass der ganze Beleg im Bild und die Schrift scharf ist; ob du das Papier danach aufbewahren musst, klärst du mit deiner Steuerberatung.
 
 ## Belege per E-Mail
 
@@ -565,5 +575,5 @@ Mit **Original herunterladen** bekommst du die Datei so zurück, wie du sie hoch
 - § 13b nur für sonstige Leistungen ausländischer Unternehmer (Kz 46/47 und 84/85), nicht für Bauleistungen, Gebäudereinigung, Gold oder Mobilfunkgeräte, und nicht bei Anlagegütern. Waren aus dem EU-Ausland sind ein [innergemeinschaftlicher Erwerb](#innergemeinschaftlicher-erwerb--1a-ustg); einen Beleg der Kategorie „Wareneinkauf (Handelsware)“ mit § 13b bucht Haben nicht.
 - Innergemeinschaftlicher Erwerb nur steuerpflichtig zu 19 % oder 7 % (Kz 89/93 und 61). Nicht unterstützt: steuerfreie Erwerbe (§ 4b UStG, Kz 91), Erwerbe zu anderen Sätzen (Kz 95/98), neue Fahrzeuge ohne USt-IdNr. des Lieferanten, Erwerbe als Kleinunternehmer (Erwerbsschwelle, § 1a Abs. 3 UStG), Dreiecksgeschäfte als letzter Abnehmer (§ 25b UStG), Aufteilung auf mehrere Kategorien und erhaltenes Skonto. Die Einfuhr aus dem Drittland ist kein Erwerb; die Einfuhrumsatzsteuer erfasst du mit dem Bescheid des Zolls (siehe [Einfuhrumsatzsteuer](#einfuhrumsatzsteuer)).
 - Die Kategorie Hardware ist für geringwertige Wirtschaftsgüter gedacht; was über mehrere Jahre abgeschrieben wird, buchst du als **Anlagegut** (siehe [Anlagen und AfA](anlagen.md)).
-- HEIC-Fotos werden abgelegt, aber weder in der Vorschau angezeigt noch von der KI gelesen.
+- HEIC-Fotos, die unverändert ankommen (über das Teilen-Menü, die REST-API, per E-Mail oder aus einem Browser, der HEIC nicht lesen kann), werden abgelegt, aber weder in der Vorschau angezeigt noch von der KI gelesen. Beim Hochladen unter **Belege** wandelt der Browser des Handys sie vorher um.
 - Dauerbelege nur für Ausgaben in Euro mit festen Beträgen, ohne § 13b, innergemeinschaftlichen Erwerb, Aufteilung auf mehrere Kategorien, Privatanteil oder Anlagegut.

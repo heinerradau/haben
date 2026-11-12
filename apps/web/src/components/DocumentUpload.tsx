@@ -1,6 +1,7 @@
 import { useRouter } from "@tanstack/react-router";
 import { useServerFn } from "@tanstack/react-start";
 import { useId, useState, type DragEvent } from "react";
+import { belegfoto } from "../lib/belegfoto.ts";
 import { errorMessage } from "../lib/format.ts";
 import { uploadDocuments } from "../server/functions/documents.ts";
 import { UploadButton } from "./UploadButton.tsx";
@@ -22,7 +23,8 @@ export function DocumentUpload({ aiAvailable }: { aiAvailable: boolean }) {
     setMessages([]);
     try {
       const form = new FormData();
-      for (const file of files) form.append("files", file);
+      // Handyfotos (HEIC, volle Auflösung) werden vorher zu einem lesbaren JPEG passender Größe
+      for (const file of await Promise.all(files.map(belegfoto))) form.append("files", file);
       const results = await upload({ data: form });
       setMessages(
         results.map((r) =>
