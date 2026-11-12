@@ -6,7 +6,7 @@ describe("Belegfoto vor dem Hochladen", () => {
     expect(istHeic({ type: "image/heic", name: "IMG_1.HEIC" })).toBe(true);
     expect(istHeic({ type: "", name: "IMG_1.heif" })).toBe(true);
     expect(sollUmwandeln({ type: "image/heic", name: "a.heic", size: 100 })).toBe(true);
-    expect(sollUmwandeln({ type: "image/jpeg", name: "a.jpg", size: 900_000 })).toBe(false);
+    expect(sollUmwandeln({ type: "image/jpeg", name: "a.jpg", size: 700_000 })).toBe(false);
     expect(sollUmwandeln({ type: "image/jpeg", name: "a.jpg", size: 4_000_000 })).toBe(true);
     expect(sollUmwandeln({ type: "image/png", name: "a.png", size: 4_000_000 })).toBe(true);
     expect(sollUmwandeln({ type: "application/pdf", name: "a.pdf", size: 9_000_000 })).toBe(false);
@@ -14,10 +14,10 @@ describe("Belegfoto vor dem Hochladen", () => {
   });
 
   it("verkleinert auf die längere Kante, hält das Seitenverhältnis und vergrößert nie", () => {
-    expect(fotoZiel(4032, 3024)).toEqual({ breite: 2400, hoehe: 1800 });
-    expect(fotoZiel(3024, 4032)).toEqual({ breite: 1800, hoehe: 2400 });
+    expect(fotoZiel(4032, 3024)).toEqual({ breite: 2000, hoehe: 1500 });
+    expect(fotoZiel(3024, 4032)).toEqual({ breite: 1500, hoehe: 2000 });
     expect(fotoZiel(1200, 800)).toEqual({ breite: 1200, hoehe: 800 });
-    expect(fotoZiel(10_000, 10)).toEqual({ breite: 2400, hoehe: 2 });
+    expect(fotoZiel(10_000, 10)).toEqual({ breite: 2000, hoehe: 2 });
     expect(fotoZiel(0, 0)).toEqual({ breite: 0, hoehe: 0 });
   });
 

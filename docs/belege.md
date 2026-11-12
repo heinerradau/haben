@@ -53,8 +53,8 @@ Ohne E-Rechnung und ohne KI füllst du die Felder von Hand aus.
 Handys speichern Fotos oft als HEIC und in voller Auflösung, mehrere Megabyte je Quittung. Beim Hochladen unter **Belege** (Kamera oder Dateiauswahl) wandelt der Browser solche Fotos deshalb vorher um:
 
 - **HEIC wird zu JPEG**, damit Haben den Beleg anzeigen und auslesen kann.
-- **Große Bilder werden verkleinert**: längere Kante höchstens 2400 Pixel, das sind bei einer A4-Seite rund 200 dpi. Die Datei liegt danach meist unter 1 MB.
-- Bilder bis 1,5 MB, PDFs und E-Rechnungen gehen unverändert hoch.
+- **Große Bilder werden verkleinert**: längere Kante höchstens 2000 Pixel, das sind bei einer A4-Seite rund 170 dpi. Ein fotografierter Kassenbon liegt danach bei einigen hundert Kilobyte.
+- Bilder bis 800 KB, PDFs und E-Rechnungen gehen unverändert hoch.
 
 Abgelegt und beim Buchen festgeschrieben wird die umgewandelte Datei; sie ist der Beleg. Kann der Browser ein Foto nicht lesen, geht das Original hoch. Achte beim Fotografieren darauf, dass der ganze Beleg im Bild und die Schrift scharf ist; ob du das Papier danach aufbewahren musst, klärst du mit deiner Steuerberatung.
 

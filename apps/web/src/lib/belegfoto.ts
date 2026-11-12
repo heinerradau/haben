@@ -2,16 +2,16 @@
  * Belegfotos vor dem Hochladen: Das Handy liefert Fotos oft als HEIC (iPhone) und in voller Sensorauflösung, mehrere
  * Megabyte je Quittung. Der Browser des Handys kann beides lesen; er wandelt das Foto deshalb selbst in ein JPEG um,
  * das überall anzeigbar und auslesbar ist, und verkleinert es auf eine Größe, bei der eine A4-Seite noch gut lesbar
- * bleibt (rund 200 dpi). PDFs, E-Rechnungen und kleine Bilder gehen unverändert hoch. Kann der Browser ein Bild nicht
+ * bleibt (rund 170 dpi). PDFs, E-Rechnungen und kleine Bilder gehen unverändert hoch. Kann der Browser ein Bild nicht
  * lesen, geht ebenfalls das Original hoch: lieber ein Beleg ohne Vorschau als keiner.
  */
 
-/** Längere Kante des umgewandelten Fotos in Pixeln: A4 hochkant mit rund 200 dpi */
-export const FOTO_MAX_KANTE = 2400;
-/** JPEG-Qualität: Text bleibt scharf, die Datei meist unter 1 MB */
-export const FOTO_QUALITAET = 0.82;
+/** Längere Kante des umgewandelten Fotos in Pixeln: A4 hochkant mit rund 170 dpi, ein Kassenbon bleibt gut lesbar */
+export const FOTO_MAX_KANTE = 2000;
+/** JPEG-Qualität: Text bleibt scharf, ein fotografierter Bon liegt bei einigen hundert Kilobyte */
+export const FOTO_QUALITAET = 0.75;
 /** Bis zu dieser Größe bleibt ein Bild, das schon überall lesbar ist, wie es ist */
-export const FOTO_UNVERAENDERT_BIS = 1_500_000;
+export const FOTO_UNVERAENDERT_BIS = 800_000;
 
 const HEIC = /\.(heic|heif)$/i;
 const BILD = /^image\/(jpeg|png|webp)$/;
