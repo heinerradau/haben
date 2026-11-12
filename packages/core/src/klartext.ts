@@ -14,6 +14,7 @@ export interface KontaktName {
 /** Verbreitete Anbieter, deren Rechnungsname nicht sagt, wofür man zahlt */
 export const BEKANNTE_KONTAKTNAMEN: readonly KontaktName[] = [
   { muster: "Meta Platforms", name: "Facebook- und Instagram-Werbung" },
+  { muster: "Facebook", name: "Facebook- und Instagram-Werbung" },
   { muster: "Google Ireland", name: "Google-Werbung" },
   { muster: "Google Commerce", name: "Google (Apps und Speicher)" },
   { muster: "google play", name: "Google (Apps und Speicher)" },

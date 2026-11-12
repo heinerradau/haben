@@ -56,11 +56,11 @@ export function MarkeCard({ uebersicht }: { uebersicht: GeschaeftUebersicht }) {
             <div className="marke-saeulen">
               <span title={`${j.jahr} hineingesteckt: ${euro(j.raus)}`}>
                 <b>{j.raus > 0 ? euro(j.raus) : ""}</b>
-                <i className="marke-raus" style={{ height: `${(j.raus / max) * 100}%` }} />
+                <i className="marke-raus" style={{ height: `${(j.raus / max) * 88}%` }} />
               </span>
               <span title={`${j.jahr} zurückbekommen: ${euro(j.rein)}`}>
                 <b>{j.rein > 0 ? euro(j.rein) : ""}</b>
-                <i style={{ height: `${(j.rein / max) * 100}%`, background: "var(--zweig-eigenes)" }} />
+                <i style={{ height: `${(j.rein / max) * 88}%`, background: "var(--zweig-eigenes)" }} />
               </span>
             </div>
             <div className="jahre-name">{j.jahr}</div>
