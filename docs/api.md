@@ -38,7 +38,8 @@ Es sind dieselben Tokens wie für die [KI-Assistenten](ki-assistenten.md); was e
 | `belege:lesen` | `GET /belege`, `GET /belege/{id}` |
 | `belege:anlegen` | dazu `POST /belege` |
 | `belege:auslesen` | `GET /belege`, `GET /belege/{id}` und `POST /belege/{id}/auslesung` |
-| `belege:buchen` | `GET /belege`, `GET /belege/{id}` und `POST /belege/{id}/buchung` |
+| `belege:aendern` | `GET /belege`, `GET /belege/{id}` und `PATCH /belege/{id}` |
+| `belege:buchen` | `GET /belege`, `GET /belege/{id}`, `POST /belege/{id}/buchung` und `POST /belege/{id}/storno` |
 | `haben:lesen` | nur die Werkzeuge über [MCP](ki-assistenten.md), nicht die REST-API |
 
 Schreiben und anlegen schließen lesen ein. Ein Token ohne das nötige Recht bekommt `403`.
@@ -271,7 +272,31 @@ curl -s -X POST "$HABEN/belege/0c9a…/buchung" -H "Authorization: Bearer $TOKEN
 - Gebucht wird genau wie mit dem Knopf: dieselben Prüfungen, dieselbe Buchung, danach ist der Beleg festgeschrieben und lässt sich nur noch stornieren.
 - Fehlt noch etwas, antwortet die API mit `422` und nennt es; vorher zeigt `GET /belege/{id}` dasselbe unter `issues`. Ein schon gebuchter Beleg wird ebenfalls mit `422` abgelehnt, es entsteht nie eine zweite Buchung.
 - Im Änderungsprotokoll steht das Token als Akteur. So siehst du später, welche Buchung von einem Werkzeug kam.
-- Die Verantwortung für die Buchführung bleibt bei dir (GoBD). Vergib das Recht nur an ein Werkzeug, dessen Ergebnisse du kontrollierst, etwa mit einer regelmäßigen Durchsicht der gebuchten Belege. Ändern, Löschen, Stornieren, Voranmeldung und ELSTER bleiben in Haben.
+- Die Verantwortung für die Buchführung bleibt bei dir (GoBD). Vergib das Recht nur an ein Werkzeug, dessen Ergebnisse du kontrollierst, etwa mit einer regelmäßigen Durchsicht der gebuchten Belege. Löschen, Voranmeldung und ELSTER bleiben in Haben.
+
+### Ändern, stornieren, neu erfassen
+
+Mit dem Recht `belege:aendern` ändert ein Werkzeug Belege, die noch „Zu prüfen“ sind. `PATCH /belege/{id}` nimmt nur die Felder, die sich ändern sollen; alles andere bleibt:
+
+```sh
+curl -s -X PATCH "$HABEN/belege/0c9a…" -H "Authorization: Bearer $TOKEN" -H "Content-Type: application/json" -d '{
+  "category": "werbung", "reverseCharge": "drittland", "amounts": [{ "taxRate": 1900, "net": 500, "tax": 0 }]
+}'
+```
+
+- Felder: `supplierName`, `supplierUstId`, `invoiceNumber`, `documentDate`, `dueDate`, `category`, `payment`, `note`, `privateShare`, `reverseCharge`, `currency`, `exchangeRate`, `exchangeRateDate`, `amounts`.
+- `amounts` stehen in der Währung des Belegs in Cent und ersetzen alle Zeilen. Bei Fremdwährung rechnet Haben mit dem Kurs in Euro um; ohne `exchangeRate` gilt der veröffentlichte Kurs.
+- `reverseCharge` ist `eu` oder `drittland` (§ 13b) oder `ig_erwerb`. Die Steuer rechnet Haben dann aus dem Netto zum angegebenen Steuersatz, wie im Formular.
+- Aufgeteilte Belege und Anlagegüter änderst du in Haben (`422`).
+
+Einen gebuchten Beleg korrigiert ein Werkzeug mit dem Recht `belege:buchen` wie du in Haben: stornieren, neu erfassen, ändern, buchen.
+
+```sh
+curl -s -X POST "$HABEN/belege/0c9a…/storno" -H "Authorization: Bearer $TOKEN" -H "Content-Type: application/json" -d '{ "reason": "Falsche Steuerbehandlung" }'
+curl -s -X POST "$HABEN/belege/0c9a…/neuerfassung" -H "Authorization: Bearer $TOKEN"
+```
+
+Der Storno ist eine Gegenbuchung; der Beleg bleibt gesperrt stehen, gelöscht wird nichts. `POST /belege/{id}/neuerfassung` (Recht `belege:anlegen`) legt den neuen Entwurf mit derselben Datei an, `replacesId` zeigt auf den stornierten Beleg.
 
 ### Paperless-ngx
 

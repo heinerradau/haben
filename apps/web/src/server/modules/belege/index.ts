@@ -31,6 +31,7 @@ export {
   reenterDocument,
   type DocumentCancellation,
 } from "./cancellation.ts";
+export { documentPatchSchema, patchDocument, type DocumentPatch } from "./aenderung.ts";
 export { extractionAvailable, extractionSettings } from "./extraction.ts";
 export { applySuppliedExtraction, suppliedExtractionSchema, type SuppliedExtraction } from "./gelieferte-auslesung.ts";
 export { supplierSuggestion, type SupplierSuggestion } from "./lieferantenvorschlag.ts";

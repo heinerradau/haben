@@ -22,8 +22,9 @@ export class McpError extends UserError {}
 /**
  * Rechte eines Tokens. haben:lesen gilt für die Werkzeuge über MCP, die übrigen für die REST-API. Kein Recht versendet
  * oder meldet ans Finanzamt, und nur belege:buchen schreibt fest: Es bucht einen fertig geprüften Eingangsbeleg genau so,
- * wie der Knopf „Bestätigen und buchen“ es täte. Das Recht ist nie vorbelegt; wer es vergibt, überträgt die Prüfung
- * dem Werkzeug und bleibt nach GoBD selbst verantwortlich.
+ * wie der Knopf „Bestätigen und buchen“ es täte, und storniert ihn wie der Knopf „Stornieren“ (Gegenbuchung, nichts
+ * wird gelöscht). belege:aendern ändert nur Belege, die noch „Zu prüfen“ sind. Beide Rechte sind nie vorbelegt; wer sie
+ * vergibt, überträgt die Prüfung dem Werkzeug und bleibt nach GoBD selbst verantwortlich.
  */
 export const TOKEN_SCOPES = [
   "haben:lesen",
@@ -34,6 +35,7 @@ export const TOKEN_SCOPES = [
   "belege:lesen",
   "belege:anlegen",
   "belege:auslesen",
+  "belege:aendern",
   "belege:buchen",
 ] as const;
 export type TokenScope = (typeof TOKEN_SCOPES)[number];
@@ -48,7 +50,8 @@ export const TOKEN_SCOPE_LABELS: Record<TokenScope, string> = {
   "belege:lesen": "API: Belege lesen",
   "belege:anlegen": "API: Belege lesen und hochladen (landen als „Zu prüfen“)",
   "belege:auslesen": "API: Belege lesen und selbst ausgelesene Werte liefern (bleiben „Zu prüfen“)",
-  "belege:buchen": "API: Belege lesen und fertig geprüfte Belege buchen (schreibt fest, ohne Klick in Haben)",
+  "belege:aendern": "API: Belege lesen und Belege ändern, die noch „Zu prüfen“ sind (Kategorie, Beträge, § 13b)",
+  "belege:buchen": "API: Belege lesen, fertig geprüfte Belege buchen und gebuchte stornieren (schreibt fest, ohne Klick in Haben)",
 };
 
 /** Ein Recht schließt ein anderes mit ein: wer schreiben darf, darf auch lesen */
@@ -57,6 +60,7 @@ const IMPLIED: Partial<Record<TokenScope, TokenScope>> = {
   "rechnungen:entwuerfe": "rechnungen:lesen",
   "belege:anlegen": "belege:lesen",
   "belege:auslesen": "belege:lesen",
+  "belege:aendern": "belege:lesen",
   "belege:buchen": "belege:lesen",
 };
 

@@ -3,15 +3,19 @@ import {
   applySuppliedExtraction,
   bookDocument,
   bookingIssues,
+  cancelDocument,
   documentCancellation,
   documentFileProblem,
   getDocument,
   listDocuments,
   MAX_DOCUMENT_SIZE,
+  patchDocument,
+  reenterDocument,
   uploadDocument,
   type DocumentReference,
 } from "../belege/index.ts";
 import { fail, notFound, ok, validate, type ApiRequest, type ApiResult } from "./http.ts";
+import { documentCancelSchema, documentPatchSchema } from "./belege-schemas.ts";
 import { documentExtractionSchema, documentQuerySchema, documentUploadSchema, type documentSchema, type documentSummarySchema } from "./schemas.ts";
 
 /*
@@ -62,6 +66,9 @@ function documentOut({ document, amounts, splits, cancellation, reentryId }: Loa
     dueDate: document.dueDate,
     payment: document.payment,
     note: document.note,
+    privateShare: document.privateShare,
+    reverseCharge: document.reverseCharge,
+    exchangeRate: document.exchangeRate,
     net: document.net,
     tax: document.tax,
     amounts: amounts.map(({ taxRate, net, tax }) => ({ taxRate, net, tax })),
@@ -161,4 +168,31 @@ export async function bookDocumentHandler(request: ApiRequest): Promise<ApiResul
   if (!(await getDocument(id))) return notFound(DOCUMENT_NOT_FOUND);
   await bookDocument(request.actor, id);
   return respondWith(id, request);
+}
+
+/** Ändert die genannten Felder eines Belegs, der noch „Zu prüfen“ ist; gespeichert wird wie in Haben. Gebuchte Belege: 422. */
+export async function patchDocumentHandler(request: ApiRequest): Promise<ApiResult> {
+  const input = validate(documentPatchSchema, request.body);
+  if ("failure" in input) return input.failure;
+  const id = request.params.id!;
+  if (!(await patchDocument(request.actor, id, input.data))) return notFound(DOCUMENT_NOT_FOUND);
+  return respondWith(id, request);
+}
+
+/** Storniert einen gebuchten Beleg wie „Stornieren“ in Haben: Gegenbuchung, der Beleg bleibt gesperrt stehen */
+export async function cancelDocumentHandler(request: ApiRequest): Promise<ApiResult> {
+  const input = validate(documentCancelSchema, request.body);
+  if ("failure" in input) return input.failure;
+  const id = request.params.id!;
+  if (!(await getDocument(id))) return notFound(DOCUMENT_NOT_FOUND);
+  await cancelDocument(request.actor, id, input.data, request.today);
+  return respondWith(id, request);
+}
+
+/** Neuer Entwurf mit derselben Datei zu einem stornierten Beleg; gibt es ihn schon, kommt er unverändert zurück */
+export async function reenterDocumentHandler(request: ApiRequest): Promise<ApiResult> {
+  const id = request.params.id!;
+  if (!(await getDocument(id))) return notFound(DOCUMENT_NOT_FOUND);
+  const neu = await reenterDocument(request.actor, id);
+  return respondWith(neu, request, 201, { Location: location(neu) });
 }

@@ -363,6 +363,12 @@ export const documentSchema = z
     dueDate: isoDate.nullable(),
     payment: z.enum(["bank", "privat", "kasse"]),
     note: z.string(),
+    privateShare: z.number().int().describe("Privatanteil in Prozent"),
+    reverseCharge: z
+      .enum(["eu", "drittland", "ig_erwerb"])
+      .nullable()
+      .describe("Steuer schuldest du selbst (§ 13b, innergemeinschaftlicher Erwerb); null = normale Rechnung"),
+    exchangeRate: z.string().nullable().describe("Bei Fremdwährung: 1 EUR = Kurs Fremdwährung"),
     net: z.number().int().describe(`Netto in Euro; ${CENTS}`),
     tax: z.number().int().describe(`Steuer in Euro; ${CENTS}`),
     amounts: z

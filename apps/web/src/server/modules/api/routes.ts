@@ -3,7 +3,16 @@ import { MAX_DOCUMENT_SIZE } from "../belege/index.ts";
 import type { TokenScope } from "../mcp/index.ts";
 import { createContactHandler, getContactHandler, listContactsHandler, updateContactHandler } from "./contacts.ts";
 import type { Handler } from "./http.ts";
-import { bookDocumentHandler, createDocumentHandler, getDocumentHandler, listDocumentsHandler, supplyExtractionHandler } from "./documents.ts";
+import {
+  bookDocumentHandler,
+  cancelDocumentHandler,
+  createDocumentHandler,
+  getDocumentHandler,
+  listDocumentsHandler,
+  patchDocumentHandler,
+  reenterDocumentHandler,
+  supplyExtractionHandler,
+} from "./documents.ts";
 import { createInvoiceHandler, deleteInvoiceHandler, getInvoiceHandler, listInvoicesHandler, updateInvoiceHandler } from "./invoices.ts";
 import { contactQuerySchema, documentQuerySchema, invoiceQuerySchema } from "./schemas.ts";
 
@@ -207,5 +216,45 @@ export const API_ROUTES: ApiRoute[] = [
       "GET /belege/{id} die `issues` lesen; sind welche offen, ist der Beleg schon gebucht oder das Jahr abgeschlossen, antwortet die API mit 422.",
     responses: { 200: { schema: "Document", description: "Der gebuchte Beleg" } },
     handler: bookDocumentHandler,
+  },
+  {
+    method: "PATCH",
+    path: "/belege/{id}",
+    scope: "belege:aendern",
+    tag: "Belege",
+    summary: "Beleg ändern",
+    description:
+      "Ändert die genannten Felder eines Belegs, der noch „Zu prüfen“ ist, etwa Kategorie, Zahlungsweg, Beträge oder die Steuerbehandlung nach " +
+      "§ 13b (reverseCharge); alles andere bleibt. Gespeichert wird wie in Haben: Bei Fremdwährung rechnet Haben mit dem Kurs in Euro um, bei " +
+      "reverseCharge die Steuer aus dem Netto. 422, wenn der Beleg gebucht oder auf mehrere Kategorien aufgeteilt ist oder ein Anlagegut werden soll.",
+    requestBody: "DocumentPatch",
+    responses: { 200: { schema: "Document", description: "Der geänderte Beleg" } },
+    handler: patchDocumentHandler,
+  },
+  {
+    method: "POST",
+    path: "/belege/{id}/storno",
+    scope: "belege:buchen",
+    tag: "Belege",
+    summary: "Beleg stornieren",
+    description:
+      "Storniert einen gebuchten Beleg wie „Stornieren“ in Haben: eine Gegenbuchung, der Beleg selbst bleibt gesperrt stehen, nichts wird gelöscht. " +
+      "Der Grund steht danach am Storno. 422, wenn der Beleg nicht gebucht, schon storniert, einer Zahlung zugeordnet, ein Anlagegut oder aus dem " +
+      "Umzug übernommen ist. Zum Korrigieren danach POST /belege/{id}/neuerfassung.",
+    requestBody: "DocumentCancel",
+    responses: { 200: { schema: "Document", description: "Der stornierte Beleg; cancelledOn nennt den Tag der Gegenbuchung" } },
+    handler: cancelDocumentHandler,
+  },
+  {
+    method: "POST",
+    path: "/belege/{id}/neuerfassung",
+    scope: "belege:anlegen",
+    tag: "Belege",
+    summary: "Stornierten Beleg neu erfassen",
+    description:
+      "Legt zu einem stornierten Beleg einen neuen Entwurf mit derselben Datei und denselben Werten an („Zu prüfen“), zum Korrigieren und erneuten " +
+      "Buchen. Gibt es den Entwurf schon, kommt er unverändert zurück. 422, wenn der Beleg nicht storniert ist.",
+    responses: { 201: { schema: "Document", description: "Der neue Entwurf; Location zeigt auf ihn" } },
+    handler: reenterDocumentHandler,
   },
 ];

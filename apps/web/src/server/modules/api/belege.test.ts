@@ -458,6 +458,81 @@ describe.skipIf(!testDatabaseUrl)("REST-API /api/v1/belege (Postgres)", () => {
       expect((await send(t, "GET", `/belege/${beleg.id as string}`)).json).toMatchObject({ invoiceNumber: "MF-2026-10", status: "gebucht" });
     });
 
+    describe("Ändern, Stornieren und Neuerfassen über die API", () => {
+      const aendern = (t: string, id: unknown, body: unknown) =>
+        send(t, "PATCH", `/belege/${id as string}`, { body: JSON.stringify(body), headers: { "Content-Type": "application/json" } });
+      const stornieren = (t: string, id: unknown, body: unknown) =>
+        send(t, "POST", `/belege/${id as string}/storno`, { body: JSON.stringify(body), headers: { "Content-Type": "application/json" } });
+      const usd = { ...werte, lieferant: "Wolke Inc.", waehrung: "USD", betraege: [{ steuersatz: "0", netto: "5.00", steuer: "0.00" }], brutto: "5.00" };
+
+      it("ändert nur die genannten Felder; § 13b und Fremdwährung rechnet Haben wie beim Speichern im Formular", async () => {
+        const t = await token(["belege:anlegen", "belege:auslesen", "belege:aendern"]);
+        const beleg = (await upload(t, jpeg(66))).json!;
+        expect((await liefern(t, beleg.id, usd)).status).toBe(200);
+        const nurLesen = await token(["belege:anlegen", "belege:auslesen"]);
+        expect((await aendern(nurLesen, beleg.id, { category: "werbung" })).status).toBe(403);
+        expect((await aendern(t, beleg.id, { kategorie: "werbung" })).status).toBe(400);
+        expect((await aendern(t, "00000000-0000-4000-8000-000000000000", { category: "werbung" })).status).toBe(404);
+
+        const geaendert = await aendern(t, beleg.id, {
+          category: "werbung",
+          reverseCharge: "drittland",
+          exchangeRate: "1,25",
+          amounts: [{ taxRate: 1900, net: 500, tax: 0 }],
+        });
+        expect(geaendert.status).toBe(200);
+        // 5,00 USD bei 1 EUR = 1,25 USD sind 4,00 EUR; die Steuer nach § 13b rechnet Haben aus dem Netto
+        expect(schemas.documentSchema.parse(geaendert.json)).toMatchObject({
+          supplierName: "Wolke Inc.",
+          invoiceNumber: "MF-2026-10",
+          category: "werbung",
+          reverseCharge: "drittland",
+          currency: "USD",
+          exchangeRate: "1.250000",
+          net: 400,
+          amounts: [{ taxRate: 1900, net: 400, tax: 76 }],
+          issues: [],
+        });
+        // Ein einzelnes Feld lässt den Rest stehen
+        const notiz = await aendern(t, beleg.id, { note: "Rechnung für die Shop-Domain" });
+        expect(notiz.json).toMatchObject({ note: "Rechnung für die Shop-Domain", category: "werbung", reverseCharge: "drittland", net: 400 });
+        const [audit] = await sql`select actor from audit_log where table_name = 'documents' and action = 'UPDATE' order by seq desc limit 1`;
+        expect(audit!.actor).toMatch(/^api:/);
+      });
+
+      it("storniert einen gebuchten Beleg mit Gegenbuchung und erfasst ihn als neuen Entwurf", async () => {
+        const t = await token(["belege:anlegen", "belege:auslesen", "belege:aendern", "belege:buchen"]);
+        const beleg = (await upload(t, jpeg(67))).json!;
+        expect((await liefern(t, beleg.id, werte)).status).toBe(200);
+        // Noch nicht gebucht: nichts zu stornieren, nichts neu zu erfassen
+        expect((await stornieren(t, beleg.id, { reason: "Falsche Kategorie" })).status).toBe(422);
+        expect((await send(t, "POST", `/belege/${beleg.id as string}/neuerfassung`)).status).toBe(422);
+        expect((await send(t, "POST", `/belege/${beleg.id as string}/buchung`)).status).toBe(200);
+        // Gebucht lässt sich nichts mehr ändern
+        expect((await aendern(t, beleg.id, { category: "porto" })).status).toBe(422);
+        expect((await stornieren(t, beleg.id, {})).status).toBe(400);
+        const ohneRecht = await token(["belege:anlegen", "belege:aendern"]);
+        expect((await stornieren(ohneRecht, beleg.id, { reason: "Falsche Kategorie" })).status).toBe(403);
+
+        const storniert = await stornieren(t, beleg.id, { reason: "Falsche Kategorie" });
+        expect(storniert.status).toBe(200);
+        expect(storniert.json).toMatchObject({ id: beleg.id, status: "gebucht", booked: true });
+        expect(storniert.json!.cancelledOn).toMatch(/^\d{4}-\d{2}-\d{2}$/);
+        const buchungen = await sql`select reverses_id from journal_entries order by created_at`;
+        expect(buchungen.map((b) => b.reverses_id !== null)).toEqual([false, true]);
+        expect((await stornieren(t, beleg.id, { reason: "Noch einmal" })).status).toBe(422);
+
+        const neu = await send(t, "POST", `/belege/${beleg.id as string}/neuerfassung`);
+        expect(neu.status).toBe(201);
+        expect(neu.json).toMatchObject({ status: "neu", booked: false, replacesId: beleg.id, invoiceNumber: "MF-2026-10", gross: 4590 });
+        expect(neu.json!.id).not.toBe(beleg.id);
+        // Derselbe Entwurf kommt wieder; korrigieren und erneut buchen
+        expect((await send(t, "POST", `/belege/${beleg.id as string}/neuerfassung`)).json!.id).toBe(neu.json!.id);
+        expect((await aendern(t, neu.json!.id, { category: "internet" })).json).toMatchObject({ category: "internet" });
+        expect((await send(t, "POST", `/belege/${neu.json!.id as string}/buchung`)).json).toMatchObject({ status: "gebucht", category: "internet" });
+      });
+    });
+
     describe("Buchen über die API", () => {
       const buchen = (t: string, id: unknown) => send(t, "POST", `/belege/${id as string}/buchung`);
 
