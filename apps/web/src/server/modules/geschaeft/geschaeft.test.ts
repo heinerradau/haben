@@ -223,9 +223,11 @@ describe.skipIf(!testDatabaseUrl)("Geschäftsbereiche (Postgres)", () => {
       von: "2025-07",
       bis: "2026-06",
       summe: 36_00,
+      // Zeichenprogramm: der mittlere der drei Monate; Wolkenspeicher einmal im Jahr: ein Zwölftel
+      monatlich: 10_00 + 33,
       posten: [
-        { kontakt: "Zeichenprogramm", bereichId: abos.id, summe: 32_00, monate: 3 },
-        { kontakt: "Wolkenspeicher", bereichId: abos.id, summe: 4_00, monate: 1 },
+        { kontakt: "Zeichenprogramm", bereichId: abos.id, summe: 32_00, monate: 3, monatlich: 10_00 },
+        { kontakt: "Wolkenspeicher", bereichId: abos.id, summe: 4_00, monate: 1, monatlich: 33 },
       ],
     });
 

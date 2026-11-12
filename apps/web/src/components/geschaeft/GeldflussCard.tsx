@@ -67,7 +67,7 @@ export function GeldflussCard({ uebersicht, jahr }: { uebersicht: GeschaeftUeber
   const gesamt = Math.max(fluss.einnahmen, fluss.ausgaben);
   const links = knoten(fluss.ein, gesamt, "ein");
   const rechts = knoten(fluss.aus, gesamt, "aus");
-  if (fluss.rest < 0) links.push({ key: "fehlt", name: "Draufgezahlt", farbe: "fehlt", cents: -fluss.rest });
+  if (fluss.rest < 0) links.push({ key: "fehlt", name: "Verlust", farbe: "fehlt", cents: -fluss.rest });
 
   const anzahl = Math.max(links.length, rechts.length, 1);
   const basis = Math.max(400, anzahl * 44);
@@ -146,11 +146,11 @@ export function GeldflussCard({ uebersicht, jahr }: { uebersicht: GeschaeftUeber
         {wann} hast du <b>{euro(fluss.einnahmen)}</b> eingenommen und <b>{euro(fluss.ausgaben)}</b> ausgegeben.{" "}
         {fluss.rest >= 0 ? (
           <>
-            Übrig geblieben sind <b>{euro(fluss.rest)}</b>.
+            Dein Gewinn: <b>{euro(fluss.rest)}</b>.
           </>
         ) : (
           <>
-            Das sind <b>{euro(-fluss.rest)}</b> mehr, als reinkam.
+            Das ist ein Verlust von <b>{euro(-fluss.rest)}</b>.
           </>
         )}
       </p>
@@ -173,7 +173,7 @@ export function GeldflussCard({ uebersicht, jahr }: { uebersicht: GeschaeftUeber
             viewBox={`0 0 ${BREITE} ${H}`}
             className="fluss-bild"
             role="group"
-            aria-label="Geldfluss: Einnahmen links, Ausgaben rechts, in der Mitte was übrig blieb"
+            aria-label="Geldfluss: Einnahmen links, Ausgaben rechts, in der Mitte der Gewinn"
           >
             {seite(links, true)}
             {seite(rechts, false)}
@@ -190,11 +190,11 @@ export function GeldflussCard({ uebersicht, jahr }: { uebersicht: GeschaeftUeber
             {restH > 0 && (
               <>
                 <path d={`M${topfX},${topfY + ausH} h${TOPF} v${restH - 8} a8,8 0 0 1 -8,8 h${-(TOPF - 16)} a8,8 0 0 1 -8,-8 Z`} className="fluss-topf-rest">
-                  <title>{`Bleibt übrig: ${euro(fluss.rest)}, ${prozent(fluss.rest, fluss.einnahmen)} der Einnahmen`}</title>
+                  <title>{`Gewinn: ${euro(fluss.rest)}, ${prozent(fluss.rest, fluss.einnahmen)} der Einnahmen`}</title>
                 </path>
                 {restH >= 58 ? (
                   <text x={BREITE / 2} y={topfY + ausH + restH / 2 - 12} style={{ textAnchor: "middle" }} className="fluss-rest-text">
-                    Bleibt übrig
+                    Gewinn
                     <tspan x={BREITE / 2} dy={22} className="fluss-rest-zahl">
                       {euro(fluss.rest)}
                     </tspan>
@@ -205,7 +205,7 @@ export function GeldflussCard({ uebersicht, jahr }: { uebersicht: GeschaeftUeber
                 ) : (
                   restH >= 18 && (
                     <text x={BREITE / 2} y={topfY + ausH + restH / 2 + 5} style={{ textAnchor: "middle" }} className="fluss-rest-text">
-                      Bleibt übrig {euro(fluss.rest)}
+                      Gewinn {euro(fluss.rest)}
                     </text>
                   )
                 )}
@@ -216,8 +216,8 @@ export function GeldflussCard({ uebersicht, jahr }: { uebersicht: GeschaeftUeber
       )}
       {fluss.rest > 0 && (
         <p className="small muted" style={{ margin: 0 }}>
-          Der dunkle Block in der Mitte ist dein Puffer: Geld, das weder ausgegeben noch in die Marke gesteckt wurde. Wie viel davon noch auf dem Geschäftskonto
-          liegt und wie viel du entnommen hast, lässt sich erst sagen, wenn die Bankumsätze in Haben sind.
+          Der dunkle Block in der Mitte ist dein Gewinn vor Steuern: was von den Einnahmen nach allen Ausgaben bleibt. Wie viel davon noch auf dem
+          Geschäftskonto liegt und wie viel du für dich entnommen hast, zeigt die Seite, sobald die Bankumsätze in Haben sind.
         </p>
       )}
     </section>

@@ -87,8 +87,6 @@ const NAV_GROUPS = [
     label: "Buchhaltung",
     links: [
       { to: "/auswertungen", icon: "reports", label: "Auswertungen" },
-      // Auswertung nach Bereichen des Betriebs über den archivierten Altbestand
-      { to: "/geschaeft", icon: "reports", label: "Geschäftsbereiche" },
       { to: "/buchungen", icon: "journal", label: "Buchungen" },
       { to: "/konten", icon: "ledger", label: "Konten" },
       // Bilanz und Abschluss gibt es nur für GmbH und UG
@@ -181,6 +179,13 @@ function AppLayout() {
             <Icon name="overview" />
             Übersicht
           </Link>
+          {/* Woher das Geld kommt und wohin es geht, nach Bereichen des Betriebs; für den Inhaber gleich unter der Übersicht */}
+          {inhaber && (
+            <Link to="/geschaeft" className="nav-link">
+              <Icon name="reports" />
+              Mein Geschäft
+            </Link>
+          )}
           {groups.map((group) => (
             <div key={group.label} className="nav-group" role="group" aria-label={group.label}>
               <div className="nav-group-label" aria-hidden="true">

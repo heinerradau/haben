@@ -72,6 +72,8 @@ export interface BereichPosten {
   text: string;
   /** Netto in Cent; Gutschriften negativ */
   netto: Cents;
+  /** Brutto in Cent, wo die Quelle es nennt: was tatsächlich gezahlt wurde */
+  brutto?: Cents;
 }
 
 function feldwert(posten: BereichPosten, feld: BereichRegelFeld): string {

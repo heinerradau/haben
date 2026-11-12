@@ -87,5 +87,6 @@ export * from "./bareinnahme.ts";
 export * from "./kleinunternehmer-stand.ts";
 export * from "./geldfluss.ts";
 export * from "./geschaeftsbereiche.ts";
+export * from "./kacheln.ts";
 export * from "./klartext.ts";
 export * from "./warenbestand.ts";

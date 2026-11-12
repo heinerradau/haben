@@ -41,9 +41,15 @@ export const BEKANNTE_KONTAKTNAMEN: readonly KontaktName[] = [
   { muster: "DB Vertrieb", name: "Deutsche Bahn" },
   { muster: "DB Fernverkehr", name: "Deutsche Bahn" },
   { muster: "Cloudflare", name: "Cloudflare (Website)" },
-  { muster: "Sammellieferant", name: "Verschiedene Lieferanten" },
-  { muster: "Sammelkunde", name: "Verschiedene Kunden" },
 ];
+
+/**
+ * Sammelkontakt ohne Aussage: Belege ohne gewählten Lieferanten oder Kunden (in Lexware Office „Sammellieferant“ und
+ * „Sammelkunde“). Die Auswertung nennt solche Posten nach ihrer Kategorie.
+ */
+export function istSammelkontakt(kontakt: string): boolean {
+  return kontakt.trim() === "" || /^sammel(lieferant|kunde)/i.test(kontakt.trim());
+}
 
 /** Rechtsformen und Zusätze am Ende eines Firmennamens */
 const RECHTSFORM =

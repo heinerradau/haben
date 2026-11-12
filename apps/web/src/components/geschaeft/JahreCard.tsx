@@ -36,7 +36,7 @@ export function JahreCard({ uebersicht, fluss }: { uebersicht: GeschaeftUebersic
           Jahr für Jahr
         </h2>
         <p className="small muted" style={{ margin: "4px 0 0" }}>
-          Nach oben, was reinkam. Nach unten, was rausging. Darunter, was das Jahr übrig ließ.
+          Nach oben, was reinkam. Nach unten, was rausging. Darunter der Gewinn des Jahres.
           {bestes && bestes.rest > 0 ? ` Dein bestes Jahr war ${bestes.jahr}.` : ""} Ein Klick auf ein Jahr zeigt oben seinen Geldfluss.
         </p>
       </div>
@@ -61,7 +61,7 @@ export function JahreCard({ uebersicht, fluss }: { uebersicht: GeschaeftUebersic
             to="/geschaeft"
             search={{ fluss: d.jahr }}
             className={fluss === d.jahr ? "jahre-jahr jahre-jahr-aktiv" : "jahre-jahr"}
-            aria-label={`${d.jahr}: ${euro(d.rein)} eingenommen, ${euro(d.raus)} ausgegeben, ${d.rest >= 0 ? "übrig" : "draufgezahlt"} ${euro(Math.abs(d.rest))}`}
+            aria-label={`${d.jahr}: ${euro(d.rein)} eingenommen, ${euro(d.raus)} ausgegeben, ${d.rest >= 0 ? "Gewinn" : "Verlust"} ${euro(Math.abs(d.rest))}`}
           >
             <span className="jahre-oben" style={{ height: maxRein * k }}>
               <span className="jahre-zahl">{euro(d.rein)}</span>

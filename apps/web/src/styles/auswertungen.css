@@ -268,11 +268,18 @@
 .marke-saeulen span { display: flex; flex-direction: column; justify-content: flex-end; align-items: center; height: 100%; width: 42%; max-width: 44px; }
 .marke-saeulen b { font-size: 11px; font-weight: 500; color: var(--muted); white-space: nowrap; font-variant-numeric: tabular-nums; }
 .marke-saeulen i { display: block; width: 100%; border-radius: 4px 4px 0 0; flex: none; }
-.fix-kacheln { display: flex; flex-wrap: wrap; gap: 6px; }
-.fix-kachel { flex-basis: 150px; min-width: 0; display: flex; flex-direction: column; gap: 2px; padding: 12px 14px; border-radius: 10px; border-left: 6px solid var(--kachel); background: color-mix(in srgb, var(--kachel) 16%, var(--surface)); }
-.fix-kachel-name { font-size: 14px; font-weight: 600; overflow-wrap: anywhere; }
-.fix-kachel-wert { font-size: 22px; font-weight: 700; font-variant-numeric: tabular-nums; }
-.fix-kachel-hinweis { font-size: 12px; color: var(--muted); }
+.fix-bild { position: relative; width: 100%; min-height: 300px; }
+.fix-kachel { position: absolute; box-sizing: border-box; display: flex; flex-direction: column; gap: 2px; padding: 12px 14px; overflow: hidden; border: 2px solid var(--surface); border-radius: 10px; background: color-mix(in srgb, var(--kachel) 26%, var(--surface)); box-shadow: inset 0 5px 0 var(--kachel); }
+.fix-kachel-name { font-size: 15px; font-weight: 600; line-height: 1.2; overflow-wrap: anywhere; }
+.fix-kachel-wert { font-size: 26px; font-weight: 700; line-height: 1.1; font-variant-numeric: tabular-nums; }
+.fix-kachel-hinweis { font-size: 12px; color: var(--ink-2); }
+.fix-klein { padding: 9px 8px 6px; }
+.fix-klein .fix-kachel-name { font-size: 12px; }
+.fix-klein .fix-kachel-wert { font-size: 17px; }
+.fix-klein .fix-kachel-hinweis, .fix-winzig .fix-kachel-hinweis { display: none; }
+.fix-winzig { padding: 7px 4px 2px; }
+.fix-winzig .fix-kachel-name { font-size: 10px; font-weight: 500; }
+.fix-winzig .fix-kachel-wert { font-size: 12px; }
 .bunt-1 { --kachel: var(--bunt-1); } .bunt-2 { --kachel: var(--bunt-2); } .bunt-3 { --kachel: var(--bunt-3); } .bunt-4 { --kachel: var(--bunt-4); }
 .bunt-5 { --kachel: var(--bunt-5); } .bunt-6 { --kachel: var(--bunt-6); } .bunt-7 { --kachel: var(--bunt-7); } .bunt-8 { --kachel: var(--bunt-8); }
 .ware-gesamt { height: 34px; display: flex; }

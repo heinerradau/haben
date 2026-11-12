@@ -70,7 +70,7 @@ export function WarenCard({ bestand }: { bestand: GeladeneWaren }) {
             In deinem Lager liegen <b>{summe.stueck.toLocaleString("de-DE")} Stück</b>. Bezahlt hast du dafür <b>{euro(summe.einkauf)}</b>. Verkauft bringen sie{" "}
             {spanne ? (
               <>
-                zwischen <b>{euro(summe.wert)}</b> (alles an Händler) und <b>{euro(summe.wertDirekt)}</b> (alles selbst verkauft).
+                zwischen <b>{euro(summe.wert)}</b> (alles an Händler, zum günstigsten Preis) und <b>{euro(summe.wertDirekt)}</b> (alles selbst verkauft).
               </>
             ) : (
               <>
@@ -93,7 +93,7 @@ export function WarenCard({ bestand }: { bestand: GeladeneWaren }) {
             </span>
             <span>
               <i className="ware-haendler" />
-              bringt der Verkauf an Händler
+              bringt der Verkauf an Händler (günstigster Preis)
             </span>
             {spanne && (
               <span>

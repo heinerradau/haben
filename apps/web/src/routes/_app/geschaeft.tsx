@@ -30,7 +30,7 @@ export const Route = createFileRoute("/_app/geschaeft")({
   }),
   loaderDeps: ({ search }) => ({ bereich: search.bereich, jahr: search.jahr }),
   loader: ({ deps }) => getGeschaeft({ data: deps }),
-  head: () => ({ meta: [{ title: "Geschäftsbereiche · Haben" }], links: [{ rel: "stylesheet", href: styles }] }),
+  head: () => ({ meta: [{ title: "Mein Geschäft · Haben" }], links: [{ rel: "stylesheet", href: styles }] }),
   component: GeschaeftPage,
 });
 
@@ -222,7 +222,7 @@ function GeschaeftPage() {
           <div className="eyebrow">
             <Link to="/auswertungen">Auswertungen</Link>
           </div>
-          <h1>Geschäftsbereiche</h1>
+          <h1>Mein Geschäft</h1>
         </div>
       </div>
 

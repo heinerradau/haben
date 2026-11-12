@@ -1,6 +1,7 @@
 import {
   bereichSummeGesamt,
   bereicheAuswerten,
+  istSammelkontakt,
   klartextName,
   postenZuordnen,
   type BereichAuswertung,
@@ -41,6 +42,7 @@ export async function ladePosten(): Promise<BereichPosten[]> {
       datum: schema.lexofficeVouchers.date,
       kontakt: schema.lexofficeVouchers.contactName,
       netto: schema.lexofficeVouchers.net,
+      brutto: schema.lexofficeVouchers.gross,
       kategorien: schema.lexofficeVouchers.categories,
       text: POSTEN_TEXT,
     })
@@ -59,11 +61,11 @@ export async function ladePosten(): Promise<BereichPosten[]> {
       text: (beleg.text ?? "").replace(/\s+/g, " ").trim(),
     };
     const kategorien = beleg.kategorien ?? [];
-    if (kategorien.length <= 1) return [{ ...basis, kategorie: kategorien[0]?.name ?? "", netto: beleg.netto }];
+    if (kategorien.length <= 1) return [{ ...basis, kategorie: kategorien[0]?.name ?? "", netto: beleg.netto, brutto: beleg.brutto }];
     // Mehrere Kategorien: Beträge der Kategoriezeilen, mit dem Vorzeichen des Belegs (Gutschriften sind negativ)
     const summe = kategorien.reduce((s, k) => s + k.net, 0);
     const dreht = summe !== 0 && Math.sign(summe) !== Math.sign(beleg.netto) && beleg.netto !== 0;
-    return kategorien.map((k) => ({ ...basis, kategorie: k.name, netto: dreht ? -k.net : k.net }));
+    return kategorien.map((k) => ({ ...basis, kategorie: k.name, netto: dreht ? -k.net : k.net, brutto: dreht ? -(k.net + k.tax) : k.net + k.tax }));
   });
 }
 
@@ -93,10 +95,37 @@ export interface Fixkosten {
   /** Erster und letzter Monat des Zeitraums, JJJJ-MM */
   von: string;
   bis: string;
-  /** Summe der zwölf Monate */
+  /** Was in den zwölf Monaten gezahlt wurde, brutto */
   summe: number;
+  /** Was zurzeit im Monat abgeht: Summe der Monatsbeträge aller Posten */
+  monatlich: number;
   /** Je Kontakt und Bereich, die größten zuerst */
-  posten: { kontakt: string; bereichId: string; summe: number; monate: number }[];
+  posten: FixkostenPosten[];
+}
+
+export interface FixkostenPosten {
+  kontakt: string;
+  bereichId: string;
+  /** Gezahlt in den zwölf Monaten, brutto */
+  summe: number;
+  /** In so vielen der zwölf Monate wurde gezahlt */
+  monate: number;
+  /**
+   * Üblicher Monatsbetrag: bei Zahlungen in mindestens drei Monaten der mittlere Monat (Median), damit eine einzelne
+   * Nachzahlung und ein Abo, das erst seit Kurzem läuft, den Betrag nicht verzerren; sonst ein Zwölftel der Jahressumme.
+   */
+  monatlich: number;
+}
+
+/** Name eines Postens in der Auswertung: der Klartext-Name des Kontakts, bei Sammelkontakten die Kategorie */
+function anzeigeName(p: Pick<ZugeordneterPosten, "kontakt" | "kategorie">, namen: readonly KontaktName[]): string {
+  return istSammelkontakt(p.kontakt) ? p.kategorie || "Ohne Namen" : klartextName(p.kontakt, namen);
+}
+
+function median(werte: number[]): number {
+  const sortiert = [...werte].sort((a, b) => a - b);
+  const mitte = Math.floor(sortiert.length / 2);
+  return sortiert.length % 2 === 1 ? sortiert[mitte]! : Math.round((sortiert[mitte - 1]! + sortiert[mitte]!) / 2);
 }
 
 /** Monat `n` Monate vor `monat` (JJJJ-MM) */
@@ -119,21 +148,30 @@ function fixkosten(posten: readonly ZugeordneterPosten[], bereiche: readonly Ges
   if (laufend.size === 0 || !juengster) return null;
   const bis = monatDavor(juengster.slice(0, 7), 1);
   const von = monatDavor(bis, 11);
-  const jeKontakt = new Map<string, { kontakt: string; bereichId: string; summe: number; monate: Set<string> }>();
+  const jeKontakt = new Map<string, { kontakt: string; bereichId: string; jeMonat: Map<string, number> }>();
   for (const p of posten) {
     const monat = p.datum.slice(0, 7);
     if (p.richtung !== "ausgabe" || !p.bereichId || !laufend.has(p.bereichId) || monat < von || monat > bis) continue;
-    const name = klartextName(p.kontakt, namen);
+    const name = anzeigeName(p, namen);
     const key = `${p.bereichId}\u0000${name}`;
-    const eintrag = jeKontakt.get(key) ?? { kontakt: name, bereichId: p.bereichId, summe: 0, monate: new Set<string>() };
-    eintrag.summe += p.netto;
-    eintrag.monate.add(monat);
+    const eintrag = jeKontakt.get(key) ?? { kontakt: name, bereichId: p.bereichId, jeMonat: new Map<string, number>() };
+    eintrag.jeMonat.set(monat, (eintrag.jeMonat.get(monat) ?? 0) + (p.brutto ?? p.netto));
     jeKontakt.set(key, eintrag);
   }
   const liste = [...jeKontakt.values()]
-    .map((e) => ({ kontakt: e.kontakt, bereichId: e.bereichId, summe: e.summe, monate: e.monate.size }))
-    .sort((a, b) => b.summe - a.summe || a.kontakt.localeCompare(b.kontakt, "de"));
-  return { von, bis, summe: liste.reduce((s, e) => s + e.summe, 0), posten: liste };
+    .map((e): FixkostenPosten => {
+      const betraege = [...e.jeMonat.values()];
+      const summe = betraege.reduce((s, b) => s + b, 0);
+      return {
+        kontakt: e.kontakt,
+        bereichId: e.bereichId,
+        summe,
+        monate: betraege.length,
+        monatlich: betraege.length >= 3 ? median(betraege) : Math.round(summe / 12),
+      };
+    })
+    .sort((a, b) => b.monatlich - a.monatlich || a.kontakt.localeCompare(b.kontakt, "de"));
+  return { von, bis, summe: liste.reduce((s, e) => s + e.summe, 0), monatlich: liste.reduce((s, e) => s + e.monatlich, 0), posten: liste };
 }
 
 export interface Kunde {
@@ -153,8 +191,8 @@ function groessteKunden(
 ): Kunde[] {
   const jeKontakt = new Map<string, Kunde>();
   for (const p of posten) {
-    if (p.richtung !== "einnahme" || !p.bereichId || zweigVon.get(p.bereichId) !== zweig || !p.kontakt) continue;
-    const name = klartextName(p.kontakt, namen);
+    if (p.richtung !== "einnahme" || !p.bereichId || zweigVon.get(p.bereichId) !== zweig) continue;
+    const name = anzeigeName(p, namen);
     const kunde = jeKontakt.get(name) ?? { kontakt: name, einnahmen: 0, posten: 0 };
     jeKontakt.set(name, { ...kunde, einnahmen: kunde.einnahmen + p.netto, posten: kunde.posten + 1 });
   }
@@ -243,7 +281,7 @@ export async function geschaeftPosten(filter: { bereichId: string | null; jahr?:
   );
   const jeKontakt = new Map<string, BereichKontakt>();
   for (const p of treffer) {
-    const name = klartextName(p.kontakt, namen);
+    const name = anzeigeName(p, namen);
     const k = jeKontakt.get(name) ?? { name, einnahmen: 0, ausgaben: 0, posten: 0 };
     if (p.richtung === "einnahme") k.einnahmen += p.netto;
     else k.ausgaben += p.netto;
