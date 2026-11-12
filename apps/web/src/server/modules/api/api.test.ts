@@ -438,6 +438,10 @@ describe.skipIf(!testDatabaseUrl)("REST-API /api/v1 (Postgres)", () => {
       const doc = response.json as { openapi: string; paths: Record<string, Record<string, { security: { token: string[] }[] }>> };
       expect(doc.openapi).toBe("3.1.0");
       expect(Object.keys(doc.paths).sort()).toEqual([
+        "/bank/konten",
+        "/bank/umsaetze",
+        "/bank/umsaetze/{id}",
+        "/bank/umsaetze/{id}/zuordnung",
         "/belege",
         "/belege/{id}",
         "/belege/{id}/auslesung",

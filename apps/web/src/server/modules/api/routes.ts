@@ -3,6 +3,7 @@ import { MAX_DOCUMENT_SIZE } from "../belege/index.ts";
 import type { TokenScope } from "../mcp/index.ts";
 import { createContactHandler, getContactHandler, listContactsHandler, updateContactHandler } from "./contacts.ts";
 import type { Handler } from "./http.ts";
+import { BANK_ROUTES } from "./bank.ts";
 import {
   bookDocumentHandler,
   cancelDocumentHandler,
@@ -30,7 +31,7 @@ export interface ApiRoute {
   scope: TokenScope;
   summary: string;
   description?: string;
-  tag: "Kontakte" | "Rechnungen" | "Belege";
+  tag: "Kontakte" | "Rechnungen" | "Belege" | "Bank";
   query?: z.ZodObject;
   /** Name in requestSchemas */
   requestBody?: string;
@@ -257,4 +258,5 @@ export const API_ROUTES: ApiRoute[] = [
     responses: { 201: { schema: "Document", description: "Der neue Entwurf; Location zeigt auf ihn" } },
     handler: reenterDocumentHandler,
   },
+  ...BANK_ROUTES,
 ];

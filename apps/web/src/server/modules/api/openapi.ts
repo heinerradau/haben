@@ -122,6 +122,7 @@ function buildDocument() {
       { name: "Kontakte", description: "Kunden; versioniert, nicht löschbar" },
       { name: "Rechnungen", description: "Alle Rechnungen lesen, Entwürfe anlegen, ändern und löschen" },
       { name: "Belege", description: "Eingangsbelege hochladen und ihren Stand lesen; geprüft und gebucht wird in Haben" },
+      { name: "Bank", description: "Konten und Umsätze lesen; mit eigenem Recht Umsätze zuordnen" },
     ],
     paths,
     components: {

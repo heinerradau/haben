@@ -40,6 +40,8 @@ Es sind dieselben Tokens wie für die [KI-Assistenten](ki-assistenten.md); was e
 | `belege:auslesen` | `GET /belege`, `GET /belege/{id}` und `POST /belege/{id}/auslesung` |
 | `belege:aendern` | `GET /belege`, `GET /belege/{id}` und `PATCH /belege/{id}` |
 | `belege:buchen` | `GET /belege`, `GET /belege/{id}`, `POST /belege/{id}/buchung` und `POST /belege/{id}/storno` |
+| `bank:lesen` | `GET /bank/konten`, `GET /bank/umsaetze`, `GET /bank/umsaetze/{id}` |
+| `bank:zuordnen` | dazu `POST /bank/umsaetze/{id}/zuordnung` |
 | `haben:lesen` | nur die Werkzeuge über [MCP](ki-assistenten.md), nicht die REST-API |
 
 Schreiben und anlegen schließen lesen ein. Ein Token ohne das nötige Recht bekommt `403`.
@@ -297,6 +299,21 @@ curl -s -X POST "$HABEN/belege/0c9a…/neuerfassung" -H "Authorization: Bearer $
 ```
 
 Der Storno ist eine Gegenbuchung; der Beleg bleibt gesperrt stehen, gelöscht wird nichts. `POST /belege/{id}/neuerfassung` (Recht `belege:anlegen`) legt den neuen Entwurf mit derselben Datei an, `replacesId` zeigt auf den stornierten Beleg.
+
+## Bank
+
+Mit `bank:lesen` liest ein Werkzeug Konten und Umsätze. `GET /bank/umsaetze` zeigt ohne Angabe die noch offenen, die jüngsten zuerst (`status=offen|zugeordnet|alle`, `konto`, `suche`). `GET /bank/umsaetze/{id}` nennt dazu die bestehenden Zuordnungen und Habens Vorschläge für den offenen Teil, mit Begründung.
+
+Mit `bank:zuordnen` ordnet es einen Umsatz zu, wie du im [Bankabgleich](bank.md):
+
+```sh
+curl -s -X POST "$HABEN/bank/umsaetze/7f3e…/zuordnung" -H "Authorization: Bearer $TOKEN" -H "Content-Type: application/json" -d '{ "kind": "document", "documentId": "0c9a…" }'
+```
+
+- `kind` ist `document` (gebuchter Beleg mit Zahlungsweg Bank), `invoice` (festgeschriebene Rechnung) oder eine einfache Direktbuchung: `privat` (Entnahme oder Einlage), `geldtransit` (Umbuchung zwischen eigenen Konten), `gebuehren`.
+- Ohne `amount` gilt der ganze offene Teil des Umsatzes; Beträge stehen in Cent mit dem Vorzeichen des Kontos.
+- Die Zuordnung bucht sofort und fest, mit dem Token als Akteur im Änderungsprotokoll. Das Recht ist bei keinem neuen Token vorbelegt.
+- Importieren, Aufteilen, Skonto, Steuerzahlungen, Darlehen und das Aufheben einer Zuordnung bleiben in Haben.
 
 ### Paperless-ngx
 
